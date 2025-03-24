@@ -1679,4 +1679,210 @@ def show_dashboard_page():
     progress_df = pd.DataFrame({
         'Data': st.session_state.progress_data["dates"],
         'Exercícios Realizados': st.session_state.progress_data["exercises_done"],
-        'Respostas Corretas': st.session_state.progress_
+        'Respostas Corretas': st.session_state.progress_data["correct_answers"]
+    })
+    
+    progress_chart = alt.Chart(progress_df).transform_fold(
+        ['Exercícios Realizados', 'Respostas Corretas'],
+        as_=['Categoria', 'Quantidade']
+    ).mark_line(point=True).encode(
+        x='Data:T',
+        y='Quantidade:Q',
+        color='Categoria:N',
+        tooltip=['Data:T', 'Quantidade:Q', 'Categoria:N']
+    ).properties(
+        width=700,
+        height=400
+    ).interactive()
+    
+    st.altair_chart(progress_chart, use_container_width=True)
+    
+    # Gráficos de distribuição
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Distribuição por Dificuldade")
+        difficulty_df = pd.DataFrame({
+            'Dificuldade': list(st.session_state.progress_data["difficulty_counts"].keys()),
+            'Quantidade': list(st.session_state.progress_data["difficulty_counts"].values())
+        })
+        
+        difficulty_chart = alt.Chart(difficulty_df).mark_bar().encode(
+            x='Dificuldade:N',
+            y='Quantidade:Q',
+            color='Dificuldade:N',
+            tooltip=['Dificuldade:N', 'Quantidade:Q']
+        ).properties(
+            width=300,
+            height=300
+        )
+        
+        st.altair_chart(difficulty_chart, use_container_width=True)
+    
+    with col2:
+        st.subheader("Métodos Utilizados")
+        method_df = pd.DataFrame({
+            'Método': list(st.session_state.progress_data["method_usage"].keys()),
+            'Quantidade': list(st.session_state.progress_data["method_usage"].values())
+        })
+        
+        method_chart = alt.Chart(method_df).mark_bar().encode(
+            x='Método:N',
+            y='Quantidade:Q',
+            color='Método:N',
+            tooltip=['Método:N', 'Quantidade:Q']
+        ).properties(
+            width=300,
+            height=300
+        )
+        
+        st.altair_chart(method_chart, use_container_width=True)
+    
+    # Gráfico de radar para proficiência por tópico
+    st.subheader("Proficiência por Tópico")
+    
+    proficiency_df = pd.DataFrame({
+        'Tópico': list(st.session_state.progress_data["topic_proficiency"].keys()),
+        'Proficiência': list(st.session_state.progress_data["topic_proficiency"].values())
+    })
+    
+    # Usando um gráfico de barras horizontais para simular um gráfico de radar
+    proficiency_chart = alt.Chart(proficiency_df).mark_bar().encode(
+        y=alt.Y('Tópico:N', sort='-x'),
+        x=alt.X('Proficiência:Q', scale=alt.Scale(domain=[0, 1])),
+        color=alt.Color('Proficiência:Q', scale=alt.Scale(scheme='viridis')),
+        tooltip=['Tópico:N', 'Proficiência:Q']
+    ).properties(
+        width=700,
+        height=400
+    )
+    
+    st.altair_chart(proficiency_chart, use_container_width=True)
+    
+    # Recomendações personalizadas
+    st.subheader("Recomendações Personalizadas")
+    
+    # Encontrar o tópico com menor proficiência
+    min_topic = min(st.session_state.progress_data["topic_proficiency"].items(), key=lambda x: x[1])
+    
+    st.info(f"""
+    **Baseado no seu progresso, recomendamos:**
+    
+    1. **Fortalecer conhecimentos em "{min_topic[0]}"** - Este parece ser um ponto de melhoria.
+    2. **Avançar para exercícios mais difíceis** - Você está se saindo bem nos exercícios de nível fácil e médio.
+    3. **Explorar métodos iterativos** - Você tem usado principalmente métodos diretos.
+    
+    Continue praticando regularmente para manter seu progresso!
+    """)
+    
+    # Opções de exportação
+    st.subheader("Exportar Dados de Progresso")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📊 Exportar Estatísticas (PDF)", use_container_width=True):
+            st.success("Estatísticas exportadas com sucesso! (Simulação)")
+    
+    with col2:
+        if st.button("📈 Exportar Dados Brutos (CSV)", use_container_width=True):
+            st.success("Dados exportados com sucesso! (Simulação)")
+
+def show_videos_page():
+    st.title("🎬 Vídeo-Aulas sobre Sistemas Lineares")
+    
+    videos = get_youtube_videos()
+    
+    # Filtro de vídeos
+    col1, col2 = st.columns([1, 3])
+    
+    with col1:
+        st.subheader("Filtros")
+        
+        search_term = st.text_input("Buscar por termo:")
+        
+        categories = ["Todos", "Teoria", "Métodos", "Aplicações", "Visualização"]
+        selected_category = st.selectbox("Categoria:", categories)
+        
+        st.markdown("### Duração")
+        max_duration = st.slider("Máximo (minutos):", 5, 60, 40)
+        
+        if st.button("Limpar Filtros"):
+            search_term = ""
+            selected_category = "Todos"
+            max_duration = 40
+    
+    with col2:
+        # Filtrar vídeos (simulação simplificada)
+        filtered_videos = videos
+        if search_term:
+            filtered_videos = [v for v in videos if search_term.lower() in v["title"].lower() or search_term.lower() in v["description"].lower()]
+        
+        if selected_category != "Todos":
+            # Simulação simplificada de categorização
+            if selected_category == "Teoria":
+                keywords = ["introdução", "teoria", "conceitos"]
+            elif selected_category == "Métodos":
+                keywords = ["método", "eliminação", "gauss", "cramer", "inversa", "jacobi"]
+            elif selected_category == "Aplicações":
+                keywords = ["aplicação", "engenharia", "problema"]
+            else:  # Visualização
+                keywords = ["visualização", "geométrica", "gráfico"]
+                
+            filtered_videos = [v for v in filtered_videos if any(k in v["title"].lower() or k in v["description"].lower() for k in keywords)]
+        
+        # Filtrar por duração
+        filtered_videos = [v for v in filtered_videos if int(v["duration"].split(":")[0]) <= max_duration]
+        
+        # Exibir vídeos
+        if filtered_videos:
+            st.subheader(f"Vídeos Disponíveis ({len(filtered_videos)})")
+            
+            for i, video in enumerate(filtered_videos):
+                with st.expander(f"{i+1}. {video['title']} ({video['duration']})", expanded=i==0):
+                    st.markdown(f"**Descrição**: {video['description']}")
+                    
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        # Simulação de thumbnail do vídeo
+                        st.image("https://via.placeholder.com/640x360.png?text=Video+Thumbnail", use_column_width=True)
+                    
+                    with col2:
+                        st.markdown(f"**Duração**: {video['duration']}")
+                        st.markdown(f"**ID**: {video['url'].split('=')[1]}")
+                        
+                        if st.button("▶️ Assistir", key=f"watch_{i}", use_container_width=True):
+                            st.markdown(f"[Abrir no YouTube]({video['url']})")
+                        
+                        if st.button("📥 Download", key=f"download_{i}", use_container_width=True):
+                            st.success("Download iniciado! (Simulação)")
+        else:
+            st.warning("Nenhum vídeo encontrado com os filtros atuais.")
+    
+    # Recursos adicionais
+    st.subheader("Recursos Complementares")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("### Playlists Recomendadas")
+        st.markdown("- [Álgebra Linear Completa](https://youtube.com/playlist)")
+        st.markdown("- [Sistemas Lineares para Engenharia](https://youtube.com/playlist)")
+        st.markdown("- [Métodos Numéricos Avançados](https://youtube.com/playlist)")
+    
+    with col2:
+        st.markdown("### Material de Apoio")
+        st.markdown("- [Apostila de Sistemas Lineares (PDF)](https://example.com/pdf)")
+        st.markdown("- [Slides das Aulas (PPT)](https://example.com/slides)")
+        st.markdown("- [Códigos de Implementação (GitHub)](https://github.com/example)")
+    
+    with col3:
+        st.markdown("### Canais Recomendados")
+        st.markdown("- [Professor Matemática](https://youtube.com/channel)")
+        st.markdown("- [Engenharia Explicada](https://youtube.com/channel)")
+        st.markdown("- [Matemática Universitária](https://youtube.com/channel)")
+
+# Chamada da função principal - quando o script é executado diretamente
+if __name__ == "__main__":
+    main()
