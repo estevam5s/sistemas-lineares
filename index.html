@@ -1,0 +1,2603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Solver Pro - Sistema de Equações Avançado</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        .result-area {
+            min-height: 200px;
+        }
+
+        .example-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .step-box {
+            border-left: 3px solid #3b82f6;
+            padding-left: 12px;
+            margin: 8px 0;
+        }
+
+        .method-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+
+        .theory-box {
+            background: rgba(167, 139, 250, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 4px solid #a78bfa;
+        }
+
+        .matrix-display {
+            font-family: monospace;
+            white-space: pre;
+        }
+        
+        .tab-button {
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab-button.active {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .equation-display {
+            font-family: 'Cambria Math', serif;
+            font-size: 1.1rem;
+            margin: 8px 0;
+        }
+        
+        .info-icon {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.2);
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white p-4">
+    <div class="container mx-auto max-w-5xl">
+        <h1 class="text-4xl font-bold text-center mb-8 mt-4">Sistema de Equações Avançado</h1>
+        
+        <div class="flex mb-6 overflow-x-auto">
+            <button class="tab-button px-4 py-2 mx-1 rounded-t-lg active" data-tab="tab-2eq">2 Equações</button>
+            <button class="tab-button px-4 py-2 mx-1 rounded-t-lg" data-tab="tab-3eq">3 Equações</button>
+            <button class="tab-button px-4 py-2 mx-1 rounded-t-lg" data-tab="tab-4eq">4 Equações</button>
+            <button class="tab-button px-4 py-2 mx-1 rounded-t-lg" data-tab="tab-theory">Teoria e Exemplos</button>
+        </div>
+        
+        <!-- Tab: 2 Equações -->
+        <div id="tab-2eq" class="tab-content glass-effect rounded-xl p-6 mb-8">
+            <div class="mb-6">
+                <label class="block text-xl mb-2">Método de Resolução:</label>
+                <select id="methodType2" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                    <option value="all">Todos os Métodos</option>
+                    <option value="substitution">Método da Substituição</option>
+                    <option value="elimination">Método da Eliminação (Adição)</option>
+                    <option value="cramer">Regra de Cramer</option>
+                    <option value="matrix">Método da Matriz Inversa</option>
+                    <option value="comparison">Método da Comparação</option>
+                </select>
+            </div>
+
+            <div id="examples2" class="example-box mb-4">
+                <h3 class="font-bold mb-2">Exemplos:</h3>
+                <p>Sistema 1: x + y = 10 e 2x - y = 5</p>
+                <p>Sistema 2: 3x + 2y = 12 e -x + 4y = 20</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button class="px-3 py-1 bg-blue-700 rounded text-sm" id="loadExample1">Carregar Sistema 1</button>
+                    <button class="px-3 py-1 bg-blue-700 rounded text-sm" id="loadExample2">Carregar Sistema 2</button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="border-b border-gray-700 pb-4">
+                    <h3 class="text-lg font-bold mb-2">Primeira Equação (ax + by = c)</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block mb-2">a₁ (coef. de x):</label>
+                            <input type="number" step="any" id="a1" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₁ (coef. de y):</label>
+                            <input type="number" step="any" id="b1" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₁ (termo independente):</label>
+                            <input type="number" step="any" id="c1" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-2">Segunda Equação (dx + ey = f)</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block mb-2">a₂ (coef. de x):</label>
+                            <input type="number" step="any" id="a2" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₂ (coef. de y):</label>
+                            <input type="number" step="any" id="b2" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₂ (termo independente):</label>
+                            <input type="number" step="any" id="c2" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="calculate2" class="w-full mt-6 py-3 px-6 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-bold transition duration-300">
+                Resolver Sistema
+            </button>
+        </div>
+        
+        <!-- Tab: 3 Equações -->
+        <div id="tab-3eq" class="tab-content glass-effect rounded-xl p-6 mb-8 hidden">
+            <div class="mb-6">
+                <label class="block text-xl mb-2">Método de Resolução:</label>
+                <select id="methodType3" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                    <option value="all">Todos os Métodos</option>
+                    <option value="substitution">Método da Substituição</option>
+                    <option value="elimination">Método da Eliminação (Gauss)</option>
+                    <option value="cramer">Regra de Cramer</option>
+                    <option value="matrix">Método da Matriz Inversa</option>
+                </select>
+            </div>
+
+            <div id="examples3" class="example-box mb-4">
+                <h3 class="font-bold mb-2">Exemplos:</h3>
+                <p>Sistema 1: x + y + z = 6, 2x - y + z = 3, 3x + y - z = 8</p>
+                <p>Sistema 2: 2x + y - z = 1, x + 2y + 3z = 11, 3x - y - z = -3</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button class="px-3 py-1 bg-blue-700 rounded text-sm" id="loadExample3">Carregar Sistema 1</button>
+                    <button class="px-3 py-1 bg-blue-700 rounded text-sm" id="loadExample4">Carregar Sistema 2</button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="border-b border-gray-700 pb-4">
+                    <h3 class="text-lg font-bold mb-2">Primeira Equação (ax + by + cz = d)</h3>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div>
+                            <label class="block mb-2">a₁ (x):</label>
+                            <input type="number" step="any" id="a1_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₁ (y):</label>
+                            <input type="number" step="any" id="b1_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₁ (z):</label>
+                            <input type="number" step="any" id="c1_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₁:</label>
+                            <input type="number" step="any" id="d1_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+                <div class="border-b border-gray-700 pb-4">
+                    <h3 class="text-lg font-bold mb-2">Segunda Equação</h3>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div>
+                            <label class="block mb-2">a₂ (x):</label>
+                            <input type="number" step="any" id="a2_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₂ (y):</label>
+                            <input type="number" step="any" id="b2_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₂ (z):</label>
+                            <input type="number" step="any" id="c2_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₂:</label>
+                            <input type="number" step="any" id="d2_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-2">Terceira Equação</h3>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div>
+                            <label class="block mb-2">a₃ (x):</label>
+                            <input type="number" step="any" id="a3_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₃ (y):</label>
+                            <input type="number" step="any" id="b3_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₃ (z):</label>
+                            <input type="number" step="any" id="c3_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₃:</label>
+                            <input type="number" step="any" id="d3_3eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="calculate3" class="w-full mt-6 py-3 px-6 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-bold transition duration-300">
+                Resolver Sistema
+            </button>
+        </div>
+        
+        <!-- Tab: 4 Equações -->
+        <div id="tab-4eq" class="tab-content glass-effect rounded-xl p-6 mb-8 hidden">
+            <div class="mb-6">
+                <label class="block text-xl mb-2">Método de Resolução:</label>
+                <select id="methodType4" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                    <option value="all">Todos os Métodos</option>
+                    <option value="elimination">Método de Gauss</option>
+                    <option value="cramer">Regra de Cramer</option>
+                    <option value="matrix">Método da Matriz Inversa</option>
+                </select>
+            </div>
+
+            <div id="examples4" class="example-box mb-4">
+                <h3 class="font-bold mb-2">Exemplo:</h3>
+                <p>x + y + z + w = 10, 2x - y + z - w = 3, x + 2y - z + 2w = 9, -x + y + 2z + w = 8</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button class="px-3 py-1 bg-blue-700 rounded text-sm" id="loadExample5">Carregar Exemplo</button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="border-b border-gray-700 pb-4">
+                    <h3 class="text-lg font-bold mb-2">Primeira Equação (ax + by + cz + dw = e)</h3>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div>
+                            <label class="block mb-2">a₁ (x):</label>
+                            <input type="number" step="any" id="a1_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₁ (y):</label>
+                            <input type="number" step="any" id="b1_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₁ (z):</label>
+                            <input type="number" step="any" id="c1_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₁ (w):</label>
+                            <input type="number" step="any" id="d1_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">e₁:</label>
+                            <input type="number" step="any" id="e1_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+                <div class="border-b border-gray-700 pb-4">
+                    <h3 class="text-lg font-bold mb-2">Segunda Equação</h3>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div>
+                            <label class="block mb-2">a₂ (x):</label>
+                            <input type="number" step="any" id="a2_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₂ (y):</label>
+                            <input type="number" step="any" id="b2_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₂ (z):</label>
+                            <input type="number" step="any" id="c2_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₂ (w):</label>
+                            <input type="number" step="any" id="d2_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">e₂:</label>
+                            <input type="number" step="any" id="e2_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+                <div class="border-b border-gray-700 pb-4">
+                    <h3 class="text-lg font-bold mb-2">Terceira Equação</h3>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div>
+                            <label class="block mb-2">a₃ (x):</label>
+                            <input type="number" step="any" id="a3_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₃ (y):</label>
+                            <input type="number" step="any" id="b3_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₃ (z):</label>
+                            <input type="number" step="any" id="c3_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₃ (w):</label>
+                            <input type="number" step="any" id="d3_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">e₃:</label>
+                            <input type="number" step="any" id="e3_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-2">Quarta Equação</h3>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div>
+                            <label class="block mb-2">a₄ (x):</label>
+                            <input type="number" step="any" id="a4_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">b₄ (y):</label>
+                            <input type="number" step="any" id="b4_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">c₄ (z):</label>
+                            <input type="number" step="any" id="c4_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">d₄ (w):</label>
+                            <input type="number" step="any" id="d4_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                        <div>
+                            <label class="block mb-2">e₄:</label>
+                            <input type="number" step="any" id="e4_4eq" class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="calculate4" class="w-full mt-6 py-3 px-6 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-bold transition duration-300">
+                Resolver Sistema
+            </button>
+        </div>
+
+        <!-- Tab: Teoria e Exemplos -->
+        <div id="tab-theory" class="tab-content glass-effect rounded-xl p-6 mb-8 hidden">
+            <h2 class="text-2xl font-bold mb-4">Teoria e Exemplos de Métodos de Resolução</h2>
+            
+            <div class="theory-box">
+                <h3 class="text-xl font-bold mb-2">Classificação de Sistemas Lineares</h3>
+                <p class="mb-2">Um sistema linear pode ser classificado como:</p>
+                <ul class="list-disc ml-6 mb-4">
+                    <li><strong>Sistema Possível e Determinado (SPD):</strong> Possui uma única solução</li>
+                    <li><strong>Sistema Possível e Indeterminado (SPI):</strong> Possui infinitas soluções</li>
+                    <li><strong>Sistema Impossível (SI):</strong> Não possui solução</li>
+                </ul>
+                <div class="equation-display">
+                    <p>Para verificar a classificação, compare o determinante da matriz dos coeficientes com o posto da matriz ampliada.</p>
+                </div>
+            </div>
+            
+            <div class="theory-box mt-4">
+                <h3 class="text-xl font-bold mb-2">Método da Substituição</h3>
+                <p>Neste método, isolamos uma variável em uma equação e a substituímos nas demais equações, reduzindo o sistema.</p>
+                <div class="example-box mt-2">
+                    <p><strong>Exemplo:</strong> Para o sistema {x + y = 5, x - y = 1}</p>
+                    <p>1. Isolamos x na primeira equação: x = 5 - y</p>
+                    <p>2. Substituímos na segunda equação: (5 - y) - y = 1</p>
+                    <p>3. Resolvemos: 5 - 2y = 1, logo y = 2</p>
+                    <p>4. Substituímos para encontrar x: x = 5 - 2 = 3</p>
+                    <p>Solução: (x, y) = (3, 2)</p>
+                </div>
+            </div>
+            
+            <div class="theory-box mt-4">
+                <h3 class="text-xl font-bold mb-2">Método da Eliminação (Adição)</h3>
+                <p>Multiplicamos as equações por constantes apropriadas para eliminar uma variável ao somá-las.</p>
+                <div class="example-box mt-2">
+                    <p><strong>Exemplo:</strong> Para o sistema {2x + 3y = 8, 4x - 5y = 1}</p>
+                    <p>1. Multiplicamos a primeira equação por 2: 4x + 6y = 16</p>
+                    <p>2. Subtraímos a segunda equação: 4x + 6y - (4x - 5y) = 16 - 1</p>
+                    <p>3. Simplificamos: 11y = 15, logo y = 15/11</p>
+                    <p>4. Substituímos em 2x + 3y = 8: 2x + 3(15/11) = 8</p>
+                    <p>5. Resolvemos: 2x = 8 - 45/11 = 88/11 - 45/11 = 43/11</p>
+                    <p>6. Portanto, x = 43/22</p>
+                </div>
+            </div>
+            
+            <div class="theory-box mt-4">
+                <h3 class="text-xl font-bold mb-2">Regra de Cramer</h3>
+                <p>Utiliza determinantes para encontrar as soluções do sistema. Válido apenas quando o determinante da matriz dos coeficientes é diferente de zero.</p>
+                <div class="equation-display">
+                    <p>Para um sistema AX = B, temos:</p>
+                    <p>x = Det(A<sub>x</sub>)/Det(A), y = Det(A<sub>y</sub>)/Det(A), z = Det(A<sub>z</sub>)/Det(A)</p>
+                    <p>Onde A<sub>x</sub>, A<sub>y</sub>, A<sub>z</sub> são matrizes obtidas substituindo a coluna correspondente pela coluna de termos independentes.</p>
+                </div>
+            </div>
+            
+            <div class="theory-box mt-4">
+                <h3 class="text-xl font-bold mb-2">Método da Matriz Inversa</h3>
+                <p>Para um sistema AX = B, a solução é X = A<sup>-1</sup>B, desde que A seja inversível.</p>
+                <div class="equation-display">
+                    <p>A inversa de uma matriz 2x2 é calculada como:</p>
+                    <p>A<sup>-1</sup> = (1/det(A)) * [ [a<sub>22</sub>, -a<sub>12</sub>], [-a<sub>21</sub>, a<sub>11</sub>] ]</p>
+                </div>
+            </div>
+            
+            <div class="theory-box mt-4">
+                <h3 class="text-xl font-bold mb-2">Método do Escalonamento (Gauss)</h3>
+                <p>Transforma o sistema em uma forma triangular superior através de operações elementares nas linhas.</p>
+                <p>As operações permitidas são:</p>
+                <ul class="list-disc ml-6 mb-4">
+                    <li>Trocar a posição de duas equações</li>
+                    <li>Multiplicar uma equação por uma constante não nula</li>
+                    <li>Substituir uma equação pela soma dela com um múltiplo de outra equação</li>
+                </ul>
+                <p>Após o escalonamento, utilizamos substituição reversa para encontrar os valores das incógnitas.</p>
+            </div>
+            
+            <div class="theory-box mt-4">
+              <h3 class="text-xl font-bold mb-2">Método da Comparação</h3>
+              <p>Isolamos a mesma variável em duas equações diferentes e igualamos as expressões resultantes.</p>
+              <div class="example-box mt-2">
+                  <p><strong>Exemplo:</strong> Para o sistema {x + 2y = 7, 3x - y = 8}</p>
+                  <p>1. Isolamos x na primeira equação: x = 7 - 2y</p>
+                  <p>2. Isolamos x na segunda equação: x = (8 + y)/3</p>
+                  <p>3. Igualamos as expressões: 7 - 2y = (8 + y)/3</p>
+                  <p>4. Resolvemos: 21 - 6y = 8 + y, logo 13 = 7y, portanto y = 13/7</p>
+                  <p>5. Substituímos para encontrar x: x = 7 - 2(13/7) = 7 - 26/7 = 49/7 - 26/7 = 23/7</p>
+              </div>
+          </div>
+          
+          <div class="theory-box mt-4">
+              <h3 class="text-xl font-bold mb-2">Sistemas Lineares Homogêneos</h3>
+              <p>São sistemas na forma AX = 0, ou seja, todos os termos independentes são nulos.</p>
+              <p>Propriedades importantes:</p>
+              <ul class="list-disc ml-6 mb-4">
+                  <li>Sempre admitem a solução trivial (todas as variáveis iguais a zero)</li>
+                  <li>Admitem soluções não-triviais se e somente se det(A) = 0</li>
+                  <li>Se o número de equações é menor que o número de incógnitas, sempre existe solução não-trivial</li>
+              </ul>
+          </div>
+          
+          <div class="theory-box mt-4">
+              <h3 class="text-xl font-bold mb-2">Análise de Consistência de Sistemas</h3>
+              <p>Um sistema linear AX = B é consistente (possui solução) se e somente se o posto da matriz A é igual ao posto da matriz ampliada [A|B].</p>
+              <p>Nos casos de 2 equações e 2 incógnitas:</p>
+              <ul class="list-disc ml-6 mb-4">
+                  <li>Se det(A) ≠ 0: Sistema Possível e Determinado (uma única solução)</li>
+                  <li>Se det(A) = 0 e as retas são coincidentes: Sistema Possível e Indeterminado (infinitas soluções)</li>
+                  <li>Se det(A) = 0 e as retas são paralelas: Sistema Impossível (sem solução)</li>
+              </ul>
+          </div>
+      </div>
+      
+      <div id="solution" class="glass-effect rounded-xl p-6 result-area mb-8">
+          <h2 class="text-2xl font-bold mb-4">Resolução Detalhada</h2>
+          <div id="solution-content" class="space-y-3">
+              <!-- Resultado será mostrado aqui -->
+              <p class="text-gray-400">Os resultados serão exibidos após o cálculo.</p>
+          </div>
+      </div>
+  </div>
+
+  <script>
+      // Funções de formatação e utilidades
+      function formatNumber(num) {
+          if (Math.abs(num) < 1e-10) return "0";
+          if (Number.isInteger(num)) return num.toString();
+          
+          // Tentar manter como fração simples se possível
+          const tolerance = 1e-10;
+          for (let den = 1; den <= 100; den++) {
+              const num2 = Math.round(num * den);
+              if (Math.abs(num2 / den - num) < tolerance) {
+                  if (num2 === den) return "1";
+                  if (num2 === 0) return "0";
+                  if (den === 1) return num2.toString();
+                  return `${num2}/${den}`;
+              }
+          }
+          
+          return Number(num.toFixed(4)).toString();
+      }
+
+      function formatMatrix(matrix) {
+          let result = '';
+          for (let i = 0; i < matrix.length; i++) {
+              result += '|';
+              for (let j = 0; j < matrix[i].length; j++) {
+                  result += ` ${formatNumber(matrix[i][j]).padStart(8)} `;
+              }
+              result += '|\n';
+          }
+          return result;
+      }
+      
+      function formatEquation(coeffs, vars, equalTo = null) {
+          let equation = "";
+          let first = true;
+          
+          for (let i = 0; i < coeffs.length; i++) {
+              if (coeffs[i] === 0) continue;
+              
+              let term = "";
+              if (coeffs[i] === 1) {
+                  term = vars[i];
+              } else if (coeffs[i] === -1) {
+                  term = "-" + vars[i];
+              } else {
+                  term = formatNumber(coeffs[i]) + vars[i];
+              }
+              
+              if (first) {
+                  if (term.startsWith("-")) {
+                      equation += term;
+                  } else {
+                      equation += term;
+                  }
+                  first = false;
+              } else {
+                  if (term.startsWith("-")) {
+                      equation += " " + term;
+                  } else {
+                      equation += " + " + term;
+                  }
+              }
+          }
+          
+          if (equation === "") equation = "0";
+          
+          if (equalTo !== null) {
+              equation += " = " + formatNumber(equalTo);
+          }
+          
+          return equation;
+      }
+
+      // Cálculo de determinantes
+      function determinant2x2(matrix) {
+          return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+      }
+      
+      function determinant3x3(matrix) {
+          return matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
+               - matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
+               + matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0]);
+      }
+      
+      function determinant4x4(matrix) {
+          let det = 0;
+          for (let i = 0; i < 4; i++) {
+              const minor = [];
+              for (let j = 1; j < 4; j++) {
+                  const row = [];
+                  for (let k = 0; k < 4; k++) {
+                      if (k !== i) row.push(matrix[j][k]);
+                  }
+                  minor.push(row);
+              }
+              const sign = i % 2 === 0 ? 1 : -1;
+              det += sign * matrix[0][i] * determinant3x3(minor);
+          }
+          return det;
+      }
+      
+      function calculateDeterminant(matrix) {
+          if (matrix.length === 1) return matrix[0][0];
+          if (matrix.length === 2) return determinant2x2(matrix);
+          if (matrix.length === 3) return determinant3x3(matrix);
+          if (matrix.length === 4) return determinant4x4(matrix);
+          
+          // Fallback para matrizes maiores (método de expansão por cofatores)
+          let det = 0;
+          for (let j = 0; j < matrix.length; j++) {
+              const minor = [];
+              for (let i = 1; i < matrix.length; i++) {
+                  const row = [];
+                  for (let k = 0; k < matrix.length; k++) {
+                      if (k !== j) row.push(matrix[i][k]);
+                  }
+                  minor.push(row);
+              }
+              const sign = j % 2 === 0 ? 1 : -1;
+              det += sign * matrix[0][j] * calculateDeterminant(minor);
+          }
+          return det;
+      }
+      
+      // Cálculo de matriz inversa
+      function matrixMinor(matrix, row, col) {
+          const minor = [];
+          for (let i = 0; i < matrix.length; i++) {
+              if (i === row) continue;
+              const newRow = [];
+              for (let j = 0; j < matrix[0].length; j++) {
+                  if (j === col) continue;
+                  newRow.push(matrix[i][j]);
+              }
+              minor.push(newRow);
+          }
+          return minor;
+      }
+      
+      function matrixCofactor(matrix) {
+          const n = matrix.length;
+          const C = Array(n).fill().map(() => Array(n).fill(0));
+          
+          for (let i = 0; i < n; i++) {
+              for (let j = 0; j < n; j++) {
+                  const minor = matrixMinor(matrix, i, j);
+                  const sign = ((i + j) % 2 === 0) ? 1 : -1;
+                  C[i][j] = sign * calculateDeterminant(minor);
+              }
+          }
+          
+          return C;
+      }
+      
+      function transposeMatrix(matrix) {
+          const n = matrix.length;
+          const T = Array(n).fill().map(() => Array(n).fill(0));
+          
+          for (let i = 0; i < n; i++) {
+              for (let j = 0; j < n; j++) {
+                  T[j][i] = matrix[i][j];
+              }
+          }
+          
+          return T;
+      }
+      
+      function inverseMatrix(matrix) {
+          const det = calculateDeterminant(matrix);
+          
+          if (Math.abs(det) < 1e-10) return null;
+          
+          const C = matrixCofactor(matrix);
+          const CT = transposeMatrix(C);
+          
+          const n = matrix.length;
+          const inv = Array(n).fill().map(() => Array(n).fill(0));
+          
+          for (let i = 0; i < n; i++) {
+              for (let j = 0; j < n; j++) {
+                  inv[i][j] = CT[i][j] / det;
+              }
+          }
+          
+          return inv;
+      }
+      
+      // Multiplicação de matrizes
+      function multiplyMatrix(a, b) {
+          const result = [];
+          for (let i = 0; i < a.length; i++) {
+              result[i] = [];
+              for (let j = 0; j < b[0].length; j++) {
+                  result[i][j] = 0;
+                  for (let k = 0; k < a[0].length; k++) {
+                      result[i][j] += a[i][k] * b[k][j];
+                  }
+              }
+          }
+          return result;
+      }
+      
+      // Escalonamento de matrizes (Método de Gauss)
+      function gaussianElimination(coeffMatrix, constants) {
+          const n = coeffMatrix.length;
+          const augmentedMatrix = [];
+          
+          // Criar matriz aumentada
+          for (let i = 0; i < n; i++) {
+              augmentedMatrix[i] = [...coeffMatrix[i], constants[i]];
+          }
+          
+          const steps = [];
+          steps.push(`<div class="step-box">
+              <p>1. Matriz aumentada inicial:</p>
+              <pre class="matrix-display">${formatAugmentedMatrix(augmentedMatrix)}</pre>
+          </div>`);
+          
+          // Escalonamento
+          for (let i = 0; i < n; i++) {
+              // Escolha do pivô (maior elemento em valor absoluto)
+              let maxRow = i;
+              for (let j = i + 1; j < n; j++) {
+                  if (Math.abs(augmentedMatrix[j][i]) > Math.abs(augmentedMatrix[maxRow][i])) {
+                      maxRow = j;
+                  }
+              }
+              
+              // Troca de linhas se necessário
+              if (maxRow !== i) {
+                  [augmentedMatrix[i], augmentedMatrix[maxRow]] = [augmentedMatrix[maxRow], augmentedMatrix[i]];
+                  steps.push(`<div class="step-box">
+                      <p>Trocar linha ${i+1} com linha ${maxRow+1}:</p>
+                      <pre class="matrix-display">${formatAugmentedMatrix(augmentedMatrix)}</pre>
+                  </div>`);
+              }
+              
+              // Verificar se a matriz é singular
+              if (Math.abs(augmentedMatrix[i][i]) < 1e-10) {
+                  continue;
+              }
+              
+              // Normalizar a linha do pivô
+              const pivot = augmentedMatrix[i][i];
+              for (let j = i; j <= n; j++) {
+                  augmentedMatrix[i][j] /= pivot;
+              }
+              steps.push(`<div class="step-box">
+                  <p>Dividir linha ${i+1} por ${formatNumber(pivot)}:</p>
+                  <pre class="matrix-display">${formatAugmentedMatrix(augmentedMatrix)}</pre>
+              </div>`);
+              
+              // Eliminar os elementos abaixo do pivô
+              for (let j = i + 1; j < n; j++) {
+                  const factor = augmentedMatrix[j][i];
+                  for (let k = i; k <= n; k++) {
+                      augmentedMatrix[j][k] -= factor * augmentedMatrix[i][k];
+                  }
+                  if (Math.abs(factor) > 1e-10) {
+                      steps.push(`<div class="step-box">
+                          <p>Subtrair ${formatNumber(factor)} vezes a linha ${i+1} da linha ${j+1}:</p>
+                          <pre class="matrix-display">${formatAugmentedMatrix(augmentedMatrix)}</pre>
+                      </div>`);
+                  }
+              }
+          }
+          
+          // Substituição reversa
+          const solution = Array(n).fill(0);
+          for (let i = n - 1; i >= 0; i--) {
+              solution[i] = augmentedMatrix[i][n];
+              for (let j = i + 1; j < n; j++) {
+                  solution[i] -= augmentedMatrix[i][j] * solution[j];
+              }
+          }
+          
+          steps.push(`<div class="step-box">
+              <p>Substituição reversa para encontrar os valores:</p>
+              <pre>${solveStepsText(augmentedMatrix, solution)}</pre>
+          </div>`);
+          
+          return { steps: steps.join(''), solution };
+      }
+      
+      function formatAugmentedMatrix(matrix) {
+          let result = '';
+          for (let i = 0; i < matrix.length; i++) {
+              result += '|';
+              for (let j = 0; j < matrix[i].length - 1; j++) {
+                  result += ` ${formatNumber(matrix[i][j]).padStart(8)} `;
+              }
+              result += ' | ';
+              result += ` ${formatNumber(matrix[i][matrix[i].length - 1]).padStart(8)} `;
+              result += '|\n';
+          }
+          return result;
+      }
+      
+      function solveStepsText(augmentedMatrix, solution) {
+          const n = solution.length;
+          let text = '';
+          
+          for (let i = n - 1; i >= 0; i--) {
+              let eq = `${getVariableName(i)} = ${formatNumber(augmentedMatrix[i][n])}`;
+              
+              for (let j = i + 1; j < n; j++) {
+                  if (Math.abs(augmentedMatrix[i][j]) < 1e-10) continue;
+                  
+                  if (augmentedMatrix[i][j] > 0) {
+                      eq += ` - ${formatNumber(augmentedMatrix[i][j])}${getVariableName(j)}`;
+                  } else {
+                      eq += ` + ${formatNumber(-augmentedMatrix[i][j])}${getVariableName(j)}`;
+                  }
+              }
+              
+              eq += ` = ${formatNumber(solution[i])}`;
+              text += eq + '\n';
+          }
+          
+          return text;
+      }
+      
+      function getVariableName(index) {
+          const vars = ['x', 'y', 'z', 'w'];
+          return vars[index] || `x${index+1}`;
+      }
+
+      // Métodos de resolução de sistemas 2x2
+      function solveBySubstitution(a1, b1, c1, a2, b2, c2) {
+          const steps = [];
+          
+          steps.push(`<div class="method-box">
+              <h3 class="font-bold text-xl mb-2">Método da Substituição</h3>
+              <div class="step-box">
+                  <p>1. Sistema original:</p>
+                  <p>${formatEquation([a1, b1], ['x', 'y'], c1)} (1)</p>
+                  <p>${formatEquation([a2, b2], ['x', 'y'], c2)} (2)</p>
+              </div>
+          `);
+
+          // Verificar se podemos isolar x ou y facilmente
+          let firstVar, secondVar;
+          let isolateFirst, eq1, eq2;
+          
+          if (Math.abs(a1) <= Math.abs(b1)) {
+              // Isolar x na primeira equação
+              isolateFirst = true;
+              firstVar = 'x';
+              secondVar = 'y';
+              eq1 = [a1, b1, c1];
+              eq2 = [a2, b2, c2];
+          } else {
+              // Isolar y na primeira equação
+              isolateFirst = false;
+              firstVar = 'y';
+              secondVar = 'x';
+              eq1 = [b1, a1, c1];
+              eq2 = [b2, a2, c2];
+          }
+          
+          if (Math.abs(eq1[0]) < 1e-10) {
+              // Primeira variável já está isolada
+              if (Math.abs(eq1[1]) < 1e-10) {
+                  if (Math.abs(eq1[2]) < 1e-10) {
+                      // 0 = 0, equação redundante
+                      steps.push(`<div class="step-box">
+                          <p>2. A primeira equação é redundante (0 = 0).</p>
+                          <p>O sistema possui infinitas soluções (SPI).</p>
+                      </div></div>`);
+                      return {steps: steps.join(''), solution: null, type: 'SPI'};
+                  } else {
+                      // 0 = não zero, sistema impossível
+                      steps.push(`<div class="step-box">
+                          <p>2. A primeira equação é inconsistente (0 = ${formatNumber(eq1[2])}).</p>
+                          <p>O sistema não possui solução (SI).</p>
+                      </div></div>`);
+                      return {steps: steps.join(''), solution: null, type: 'SI'};
+                  }
+              }
+              
+              // Caso by = c
+              const y_value = eq1[2] / eq1[1];
+              steps.push(`<div class="step-box">
+                  <p>2. Na primeira equação, ${formatEquation([eq1[1]], [secondVar], eq1[2])}</p>
+                  <p>Portanto, ${secondVar} = ${formatNumber(y_value)}</p>
+              </div>`);
+              
+              // Substituir na segunda equação
+              const x_value = (eq2[2] - eq2[1] * y_value) / eq2[0];
+              steps.push(`<div class="step-box">
+                  <p>3. Substituir ${secondVar} = ${formatNumber(y_value)} na segunda equação:</p>
+                  <p>${formatEquation([eq2[0]], [firstVar])} + ${formatEquation([eq2[1]], [secondVar])} = ${formatNumber(eq2[2])}</p>
+                  <p>${formatEquation([eq2[0]], [firstVar])} + ${formatNumber(eq2[1] * y_value)} = ${formatNumber(eq2[2])}</p>
+                  <p>${formatEquation([eq2[0]], [firstVar])} = ${formatNumber(eq2[2] - eq2[1] * y_value)}</p>
+                  <p>${firstVar} = ${formatNumber(x_value)}</p>
+              </div>`);
+              
+              let solution = {};
+              if (isolateFirst) {
+                  solution = {x: x_value, y: y_value};
+              } else {
+                  solution = {x: y_value, y: x_value};
+              }
+              
+              steps.push(`<div class="step-box">
+                  <p>4. Solução:</p>
+                  <p>x = ${formatNumber(solution.x)}</p>
+                  <p>y = ${formatNumber(solution.y)}</p>
+              </div></div>`);
+              
+              return {steps: steps.join(''), solution, type: 'SPD'};
+          }
+          
+          // Isolar a primeira variável
+          const firstCoef = -eq1[0] / eq1[1];
+          const constTerm = eq1[2] / eq1[1];
+          
+          steps.push(`<div class="step-box">
+              <p>2. Isolar ${firstVar} na equação (1):</p>
+              <p>${formatEquation([eq1[0], eq1[1]], [firstVar, secondVar], eq1[2])}</p>
+              <p>${formatEquation([eq1[1]], [secondVar])} = ${formatNumber(eq1[2])} - ${formatEquation([eq1[0]], [firstVar])}</p>
+              <p>${secondVar} = ${formatNumber(constTerm)} + (${formatNumber(firstCoef)})${firstVar}</p>
+          </div>`);
+
+          // Substituir na segunda equação
+          const newCoef = eq2[0] + eq2[1] * firstCoef;
+          const newConst = eq2[2] - eq2[1] * constTerm;
+          
+          steps.push(`<div class="step-box">
+              <p>3. Substituir ${secondVar} na equação (2):</p>
+              <p>${formatEquation([eq2[0], eq2[1]], [firstVar, secondVar], eq2[2])}</p>
+              <p>${formatEquation([eq2[0]], [firstVar])} + ${formatEquation([eq2[1]], [secondVar])} = ${formatNumber(eq2[2])}</p>
+              <p>${formatEquation([eq2[0]], [firstVar])} + ${formatEquation([eq2[1]], ['(' + formatNumber(constTerm) + ' + (' + formatNumber(firstCoef) + ')' + firstVar + ')'])} = ${formatNumber(eq2[2])}</p>
+              <p>${formatEquation([eq2[0]], [firstVar])} + ${formatNumber(eq2[1] * constTerm)} + ${formatNumber(eq2[1] * firstCoef)}${firstVar} = ${formatNumber(eq2[2])}</p>
+              <p>${formatEquation([eq2[0] + eq2[1] * firstCoef], [firstVar])} = ${formatNumber(eq2[2] - eq2[1] * constTerm)}</p>
+          </div>`);
+
+          // Verificar se há solução única
+          if (Math.abs(newCoef) < 1e-10) {
+              if (Math.abs(newConst) < 1e-10) {
+                  // 0 = 0, infinitas soluções
+                  steps.push(`<div class="step-box">
+                      <p>4. Após a substituição, obtemos 0 = 0.</p>
+                      <p>O sistema possui infinitas soluções (SPI).</p>
+                  </div></div>`);
+                  return {steps: steps.join(''), solution: null, type: 'SPI'};
+              } else {
+                  // 0 = não zero, sistema impossível
+                  steps.push(`<div class="step-box">
+                      <p>4. Após a substituição, obtemos 0 = ${formatNumber(newConst)}.</p>
+                      <p>O sistema não possui solução (SI).</p>
+                  </div></div>`);
+                  return {steps: steps.join(''), solution: null, type: 'SI'};
+              }
+          }
+
+          // Resolver para a primeira variável
+          const firstValue = newConst / newCoef;
+          steps.push(`<div class="step-box">
+              <p>4. Resolver para ${firstVar}:</p>
+              <p>${firstVar} = ${formatNumber(newConst)} / ${formatNumber(newCoef)} = ${formatNumber(firstValue)}</p>
+          </div>`);
+
+          // Resolver para a segunda variável
+          const secondValue = constTerm + firstCoef * firstValue;
+          steps.push(`<div class="step-box">
+              <p>5. Substituir ${firstVar} para encontrar ${secondVar}:</p>
+              <p>${secondVar} = ${formatNumber(constTerm)} + (${formatNumber(firstCoef)}) × ${formatNumber(firstValue)}</p>
+              <p>${secondVar} = ${formatNumber(secondValue)}</p>
+          </div>`);
+
+          let solution = {};
+          if (isolateFirst) {
+              solution = {x: firstValue, y: secondValue};
+          } else {
+              solution = {x: secondValue, y: firstValue};
+          }
+
+          steps.push(`<div class="step-box">
+              <p>6. Solução:</p>
+              <p>x = ${formatNumber(solution.x)}</p>
+              <p>y = ${formatNumber(solution.y)}</p>
+          </div></div>`);
+
+          return {steps: steps.join(''), solution, type: 'SPD'};
+      }
+
+      function solveByElimination(a1, b1, c1, a2, b2, c2) {
+          const steps = [];
+          
+          steps.push(`<div class="method-box">
+              <h3 class="font-bold text-xl mb-2">Método da Eliminação (Adição)</h3>
+              <div class="step-box">
+                  <p>1. Sistema original:</p>
+                  <p>${formatEquation([a1, b1], ['x', 'y'], c1)} (1)</p>
+                  <p>${formatEquation([a2, b2], ['x', 'y'], c2)} (2)</p>
+              </div>
+          `);
+
+          // Decidir qual variável eliminar baseado nos coeficientes
+          let eliminate = 'x';
+          let m1 = a2, m2 = a1;
+          
+          if (Math.abs(a1 * b2 - a2 * b1) < 1e-10) {
+              // Equações são dependentes, verificar consistência
+              const ratio = Math.abs(a1) > Math.abs(a2) ? a1 / a2 : a2 / a1;
+              const expectedC = Math.abs(a1) > Math.abs(a2) ? c2 * ratio : c1 * ratio;
+              const actualC = Math.abs(a1) > Math.abs(a2) ? c1 : c2;
+              
+              if (Math.abs(expectedC - actualC) < 1e-10) {
+                  // Sistema com infinitas soluções
+                  steps.push(`<div class="step-box">
+                      <p>2. As equações são linearmente dependentes e consistentes.</p>
+                      <p>O sistema possui infinitas soluções (SPI).</p>
+                  </div></div>`);
+                  return {steps: steps.join(''), solution: null, type: 'SPI'};
+              } else {
+                  // Sistema impossível
+                  steps.push(`<div class="step-box">
+                      <p>2. As equações são linearmente dependentes mas inconsistentes.</p>
+                      <p>O sistema não possui solução (SI).</p>
+                  </div></div>`);
+                  return {steps: steps.join(''), solution: null, type: 'SI'};
+              }
+          }
+          
+          if (Math.abs(a1) < Math.abs(b1) || Math.abs(a2) < Math.abs(b2)) {
+              eliminate = 'y';
+              m1 = b2;
+              m2 = b1;
+          }
+          
+          // Multiplicadores para eliminar a variável escolhida
+          steps.push(`<div class="step-box">
+              <p>2. Preparar equações para eliminar ${eliminate}:</p>
+              <p>Multiplicar equação (1) por ${formatNumber(m1)}</p>
+              <p>Multiplicar equação (2) por ${formatNumber(m2)}</p>
+          </div>`);
+
+          // Aplicar multiplicadores
+          const eq1Mult = [a1 * m1, b1 * m1, c1 * m1];
+          const eq2Mult = [a2 * m2, b2 * m2, c2 * m2];
+          
+          steps.push(`<div class="step-box">
+              <p>3. Equações após multiplicação:</p>
+              <p>${formatEquation([eq1Mult[0], eq1Mult[1]], ['x', 'y'], eq1Mult[2])} (1')</p>
+              <p>${formatEquation([eq2Mult[0], eq2Mult[1]], ['x', 'y'], eq2Mult[2])} (2')</p>
+          </div>`);
+
+          // Subtrair as equações
+          const diff = eliminate === 'x' 
+              ? [eq1Mult[1] - eq2Mult[1], eq1Mult[2] - eq2Mult[2]] 
+              : [eq1Mult[0] - eq2Mult[0], eq1Mult[2] - eq2Mult[2]];
+          
+          steps.push(`<div class="step-box">
+              <p>4. Subtrair as equações (1') - (2'):
+                <p>${formatEquation([eq1Mult[0], eq1Mult[1]], ['x', 'y'], eq1Mult[2])} - ${formatEquation([eq2Mult[0], eq2Mult[1]], ['x', 'y'], eq2Mult[2])}</p>
+                <p>${eliminate === 'x' ? formatEquation([0, diff[0]], ['x', 'y'], diff[1]) : formatEquation([diff[0], 0], ['x', 'y'], diff[1])}</p>
+            </div>`);
+
+            // Resolver para a variável restante
+            const remainingVar = eliminate === 'x' ? 'y' : 'x';
+            if (Math.abs(diff[0]) < 1e-10) {
+                if (Math.abs(diff[1]) < 1e-10) {
+                    // 0 = 0, sistema com infinitas soluções
+                    steps.push(`<div class="step-box">
+                        <p>5. Após a eliminação, obtemos 0 = 0.</p>
+                        <p>O sistema possui infinitas soluções (SPI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SPI'};
+                } else {
+                    // 0 = não-zero, sistema impossível
+                    steps.push(`<div class="step-box">
+                        <p>5. Após a eliminação, obtemos 0 = ${formatNumber(diff[1])}</p>
+                        <p>O sistema não possui solução (SI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SI'};
+                }
+            }
+            
+            const varValue = diff[1] / diff[0];
+            steps.push(`<div class="step-box">
+                <p>5. Resolver para ${remainingVar}:</p>
+                <p>${formatEquation([diff[0]], [remainingVar], diff[1])}</p>
+                <p>${remainingVar} = ${formatNumber(diff[1])} / ${formatNumber(diff[0])} = ${formatNumber(varValue)}</p>
+            </div>`);
+            
+            // Substituir na primeira equação para encontrar a outra variável
+            let eqToUse = [a1, b1, c1];  // Usar a primeira equação original
+            let value = 0;
+            
+            if (remainingVar === 'y') {
+                // Substituir y para encontrar x
+                value = (eqToUse[2] - eqToUse[1] * varValue) / eqToUse[0];
+                steps.push(`<div class="step-box">
+                    <p>6. Substituir y = ${formatNumber(varValue)} na primeira equação para encontrar x:</p>
+                    <p>${formatEquation([eqToUse[0], eqToUse[1]], ['x', 'y'], eqToUse[2])}</p>
+                    <p>${formatEquation([eqToUse[0]], ['x'])} + ${formatNumber(eqToUse[1] * varValue)} = ${formatNumber(eqToUse[2])}</p>
+                    <p>${formatEquation([eqToUse[0]], ['x'])} = ${formatNumber(eqToUse[2] - eqToUse[1] * varValue)}</p>
+                    <p>x = ${formatNumber(value)}</p>
+                </div>`);
+            } else {
+                // Substituir x para encontrar y
+                value = (eqToUse[2] - eqToUse[0] * varValue) / eqToUse[1];
+                steps.push(`<div class="step-box">
+                    <p>6. Substituir x = ${formatNumber(varValue)} na primeira equação para encontrar y:</p>
+                    <p>${formatEquation([eqToUse[0], eqToUse[1]], ['x', 'y'], eqToUse[2])}</p>
+                    <p>${formatNumber(eqToUse[0] * varValue)} + ${formatEquation([eqToUse[1]], ['y'])} = ${formatNumber(eqToUse[2])}</p>
+                    <p>${formatEquation([eqToUse[1]], ['y'])} = ${formatNumber(eqToUse[2] - eqToUse[0] * varValue)}</p>
+                    <p>y = ${formatNumber(value)}</p>
+                </div>`);
+            }
+            
+            const solution = remainingVar === 'y' ? {x: value, y: varValue} : {x: varValue, y: value};
+            
+            steps.push(`<div class="step-box">
+                <p>7. Solução:</p>
+                <p>x = ${formatNumber(solution.x)}</p>
+                <p>y = ${formatNumber(solution.y)}</p>
+            </div></div>`);
+            
+            return {steps: steps.join(''), solution, type: 'SPD'};
+        }
+
+        function solveByCramer(a1, b1, c1, a2, b2, c2) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Regra de Cramer</h3>
+                <div class="step-box">
+                    <p>1. Sistema original:</p>
+                    <p>${formatEquation([a1, b1], ['x', 'y'], c1)}</p>
+                    <p>${formatEquation([a2, b2], ['x', 'y'], c2)}</p>
+                </div>
+            `);
+
+            // Calcular determinante principal
+            const A = [[a1, b1], [a2, b2]];
+            const D = determinant2x2(A);
+            steps.push(`<div class="step-box">
+                <p>2. Determinante principal (D):</p>
+                <pre class="matrix-display">${formatMatrix(A)}</pre>
+                <p>D = ${a1} × ${b2} - ${b1} × ${a2} = ${formatNumber(D)}</p>
+            </div>`);
+
+            if (Math.abs(D) < 1e-10) {
+                // Verificar se o sistema é SPI ou SI
+                const Dx = determinant2x2([[c1, b1], [c2, b2]]);
+                const Dy = determinant2x2([[a1, c1], [a2, c2]]);
+                
+                if (Math.abs(Dx) < 1e-10 && Math.abs(Dy) < 1e-10) {
+                    steps.push(`<div class="step-box">
+                        <p>3. Como D = 0, Dx = 0 e Dy = 0, o sistema é possível e indeterminado (SPI).</p>
+                        <p>O sistema possui infinitas soluções.</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SPI'};
+                } else {
+                    steps.push(`<div class="step-box">
+                        <p>3. Como D = 0, mas Dx ≠ 0 ou Dy ≠ 0, o sistema é impossível (SI).</p>
+                        <p>O sistema não possui solução.</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SI'};
+                }
+            }
+
+            // Calcular Dx
+            const Ax = [[c1, b1], [c2, b2]];
+            const Dx = determinant2x2(Ax);
+            steps.push(`<div class="step-box">
+                <p>3. Determinante Dx (substituir coluna de x pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Ax)}</pre>
+                <p>Dx = ${c1} × ${b2} - ${b1} × ${c2} = ${formatNumber(Dx)}</p>
+            </div>`);
+
+            // Calcular Dy
+            const Ay = [[a1, c1], [a2, c2]];
+            const Dy = determinant2x2(Ay);
+            steps.push(`<div class="step-box">
+                <p>4. Determinante Dy (substituir coluna de y pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Ay)}</pre>
+                <p>Dy = ${a1} × ${c2} - ${c1} × ${a2} = ${formatNumber(Dy)}</p>
+            </div>`);
+
+            // Calcular x e y
+            const x = Dx / D;
+            const y = Dy / D;
+            
+            steps.push(`<div class="step-box">
+                <p>5. Calcular x e y:</p>
+                <p>x = Dx/D = ${formatNumber(Dx)}/${formatNumber(D)} = ${formatNumber(x)}</p>
+                <p>y = Dy/D = ${formatNumber(Dy)}/${formatNumber(D)} = ${formatNumber(y)}</p>
+            </div>`);
+
+            steps.push(`<div class="step-box">
+                <p>6. Solução:</p>
+                <p>x = ${formatNumber(x)}</p>
+                <p>y = ${formatNumber(y)}</p>
+            </div></div>`);
+
+            return {steps: steps.join(''), solution: {x, y}, type: 'SPD'};
+        }
+
+        function solveByMatrix(a1, b1, c1, a2, b2, c2) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Método da Matriz Inversa</h3>
+                <div class="step-box">
+                    <p>1. Sistema na forma matricial AX = B:</p>
+                    <pre class="matrix-display">A = ${formatMatrix([[a1, b1], [a2, b2]])}</pre>
+                    <pre class="matrix-display">B = ${formatMatrix([[c1], [c2]])}</pre>
+                </div>
+            `);
+
+            // Calcular determinante para verificar se a matriz é inversível
+            const A = [[a1, b1], [a2, b2]];
+            const det = determinant2x2(A);
+            
+            steps.push(`<div class="step-box">
+                <p>2. Verificar se a matriz A é inversível:</p>
+                <p>det(A) = ${a1} × ${b2} - ${b1} × ${a2} = ${formatNumber(det)}</p>
+            </div>`);
+
+            if (Math.abs(det) < 1e-10) {
+                // Verificar se o sistema é SPI ou SI
+                const B = [[c1], [c2]];
+                const augmentedMatrix = [[a1, b1, c1], [a2, b2, c2]];
+                
+                if (Math.abs(c1) < 1e-10 && Math.abs(c2) < 1e-10) {
+                    steps.push(`<div class="step-box">
+                        <p>3. Como det(A) = 0 e todos os termos independentes são zero,</p>
+                        <p>o sistema é homogêneo e possui infinitas soluções (SPI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SPI'};
+                }
+                
+                // Verificar se as linhas são proporcionais
+                let ratio = 0;
+                if (Math.abs(a1) > 1e-10) ratio = a2 / a1;
+                else if (Math.abs(b1) > 1e-10) ratio = b2 / b1;
+                
+                if ((Math.abs(a1 * ratio - a2) < 1e-10) && 
+                    (Math.abs(b1 * ratio - b2) < 1e-10) && 
+                    (Math.abs(c1 * ratio - c2) < 1e-10)) {
+                    steps.push(`<div class="step-box">
+                        <p>3. A matriz A não é inversível (det(A) = 0) e as equações são proporcionais.</p>
+                        <p>O sistema possui infinitas soluções (SPI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SPI'};
+                } else {
+                    steps.push(`<div class="step-box">
+                        <p>3. A matriz A não é inversível (det(A) = 0) e as equações são inconsistentes.</p>
+                        <p>O sistema não possui solução (SI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SI'};
+                }
+            }
+
+            // Calcular matriz inversa
+            const invA = [
+                [b2 / det, -b1 / det],
+                [-a2 / det, a1 / det]
+            ];
+            
+            steps.push(`<div class="step-box">
+                <p>3. Calcular a matriz inversa de A:</p>
+                <p>A⁻¹ = (1/det(A)) × adj(A)</p>
+                <p>adj(A) = [
+                    [a₂₂, -a₁₂],
+                    [-a₂₁, a₁₁]
+                ] = [
+                    [${b2}, -${b1}],
+                    [-${a2}, ${a1}]
+                ]</p>
+                <pre class="matrix-display">A⁻¹ = ${formatMatrix(invA)}</pre>
+            </div>`);
+
+            // Calcular solução X = A^(-1)B
+            const B = [[c1], [c2]];
+            const X = multiplyMatrix(invA, B);
+
+            steps.push(`<div class="step-box">
+                <p>4. Calcular X = A⁻¹B:</p>
+                <pre class="matrix-display">${formatMatrix(invA)} × ${formatMatrix(B)} = ${formatMatrix(X)}</pre>
+            </div>`);
+
+            const x = X[0][0];
+            const y = X[1][0];
+
+            steps.push(`<div class="step-box">
+                <p>5. Solução:</p>
+                <p>x = ${formatNumber(x)}</p>
+                <p>y = ${formatNumber(y)}</p>
+            </div></div>`);
+
+            return {steps: steps.join(''), solution: {x, y}, type: 'SPD'};
+        }
+
+        function solveByComparison(a1, b1, c1, a2, b2, c2) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Método da Comparação</h3>
+                <div class="step-box">
+                    <p>1. Sistema original:</p>
+                    <p>${formatEquation([a1, b1], ['x', 'y'], c1)} (1)</p>
+                    <p>${formatEquation([a2, b2], ['x', 'y'], c2)} (2)</p>
+                </div>
+            `);
+
+            // Verificar qual variável isolar
+            let varToIsolate = 'x';
+            if (Math.abs(a1) < Math.abs(b1) || Math.abs(a2) < Math.abs(b2)) {
+                varToIsolate = 'y';
+            }
+            
+            // Isolar a variável escolhida em ambas as equações
+            let expr1, expr2;
+            
+            if (varToIsolate === 'x') {
+                // Verificar se os coeficientes de x são não nulos
+                if (Math.abs(a1) < 1e-10 || Math.abs(a2) < 1e-10) {
+                    if (Math.abs(a1) < 1e-10 && Math.abs(a2) < 1e-10) {
+                        // Ambas as equações não têm x, verificar se são consistentes
+                        if (Math.abs(b1) < 1e-10 && Math.abs(b2) < 1e-10) {
+                            // Ambas são 0 = constante
+                            if (Math.abs(c1) < 1e-10 && Math.abs(c2) < 1e-10) {
+                                steps.push(`<div class="step-box">
+                                    <p>2. Ambas as equações são redundantes (0 = 0).</p>
+                                    <p>O sistema possui infinitas soluções (SPI).</p>
+                                </div></div>`);
+                                return {steps: steps.join(''), solution: null, type: 'SPI'};
+                            } else {
+                                steps.push(`<div class="step-box">
+                                    <p>2. Pelo menos uma das equações é inconsistente (0 = constante não nula).</p>
+                                    <p>O sistema não possui solução (SI).</p>
+                                </div></div>`);
+                                return {steps: steps.join(''), solution: null, type: 'SI'};
+                            }
+                        }
+                        
+                        // Ambas as equações determinam apenas y
+                        const y1 = c1 / b1;
+                        const y2 = c2 / b2;
+                        
+                        if (Math.abs(y1 - y2) < 1e-10) {
+                            steps.push(`<div class="step-box">
+                                <p>2. Ambas as equações determinam apenas y:</p>
+                                <p>Da primeira equação: y = ${formatNumber(y1)}</p>
+                                <p>Da segunda equação: y = ${formatNumber(y2)}</p>
+                                <p>Os valores coincidem, então o sistema possui infinitas soluções para x.</p>
+                            </div></div>`);
+                            return {steps: steps.join(''), solution: {y: y1}, type: 'SPI'};
+                        } else {
+                            steps.push(`<div class="step-box">
+                                <p>2. Ambas as equações determinam apenas y:</p>
+                                <p>Da primeira equação: y = ${formatNumber(y1)}</p>
+                                <p>Da segunda equação: y = ${formatNumber(y2)}</p>
+                                <p>Os valores são diferentes, então o sistema é impossível (SI).</p>
+                            </div></div>`);
+                            return {steps: steps.join(''), solution: null, type: 'SI'};
+                        }
+                    }
+                    
+                    // Mudar para isolar y, já que um dos coeficientes de x é zero
+                    varToIsolate = 'y';
+                }
+            } else {
+                // Verificar se os coeficientes de y são não nulos
+                if (Math.abs(b1) < 1e-10 || Math.abs(b2) < 1e-10) {
+                    if (Math.abs(b1) < 1e-10 && Math.abs(b2) < 1e-10) {
+                        // Ambas as equações não têm y, verificar se são consistentes
+                        if (Math.abs(a1) < 1e-10 && Math.abs(a2) < 1e-10) {
+                            // Ambas são 0 = constante
+                            if (Math.abs(c1) < 1e-10 && Math.abs(c2) < 1e-10) {
+                                steps.push(`<div class="step-box">
+                                    <p>2. Ambas as equações são redundantes (0 = 0).</p>
+                                    <p>O sistema possui infinitas soluções (SPI).</p>
+                                </div></div>`);
+                                return {steps: steps.join(''), solution: null, type: 'SPI'};
+                            } else {
+                                steps.push(`<div class="step-box">
+                                    <p>2. Pelo menos uma das equações é inconsistente (0 = constante não nula).</p>
+                                    <p>O sistema não possui solução (SI).</p>
+                                </div></div>`);
+                                return {steps: steps.join(''), solution: null, type: 'SI'};
+                            }
+                        }
+                        
+                        // Ambas as equações determinam apenas x
+                        const x1 = c1 / a1;
+                        const x2 = c2 / a2;
+                        
+                        if (Math.abs(x1 - x2) < 1e-10) {
+                            steps.push(`<div class="step-box">
+                                <p>2. Ambas as equações determinam apenas x:</p>
+                                <p>Da primeira equação: x = ${formatNumber(x1)}</p>
+                                <p>Da segunda equação: x = ${formatNumber(x2)}</p>
+                                <p>Os valores coincidem, então o sistema possui infinitas soluções para y.</p>
+                            </div></div>`);
+                            return {steps: steps.join(''), solution: {x: x1}, type: 'SPI'};
+                        } else {
+                            steps.push(`<div class="step-box">
+                                <p>2. Ambas as equações determinam apenas x:</p>
+                                <p>Da primeira equação: x = ${formatNumber(x1)}</p>
+                                <p>Da segunda equação: x = ${formatNumber(x2)}</p>
+                                <p>Os valores são diferentes, então o sistema é impossível (SI).</p>
+                            </div></div>`);
+                            return {steps: steps.join(''), solution: null, type: 'SI'};
+                        }
+                    }
+                    
+                    // Mudar para isolar x, já que um dos coeficientes de y é zero
+                    varToIsolate = 'x';
+                }
+            }
+            
+            if (varToIsolate === 'x') {
+                // Isolar x nas duas equações
+                expr1 = {
+                    coef: -b1 / a1,
+                    const: c1 / a1
+                };
+                
+                expr2 = {
+                    coef: -b2 / a2,
+                    const: c2 / a2
+                };
+                
+                steps.push(`<div class="step-box">
+                    <p>2. Isolar x nas duas equações:</p>
+                    <p>Da equação (1): ${formatEquation([a1, b1], ['x', 'y'], c1)}</p>
+                    <p>${a1}x = ${c1} - ${b1}y</p>
+                    <p>x = ${formatNumber(expr1.const)} + (${formatNumber(expr1.coef)})y</p>
+                    <p>Da equação (2): ${formatEquation([a2, b2], ['x', 'y'], c2)}</p>
+                    <p>${a2}x = ${c2} - ${b2}y</p>
+                    <p>x = ${formatNumber(expr2.const)} + (${formatNumber(expr2.coef)})y</p>
+                </div>`);
+            } else {
+                // Isolar y nas duas equações
+                expr1 = {
+                    coef: -a1 / b1,
+                    const: c1 / b1
+                };
+                
+                expr2 = {
+                    coef: -a2 / b2,
+                    const: c2 / b2
+                };
+                
+                steps.push(`<div class="step-box">
+                    <p>2. Isolar y nas duas equações:</p>
+                    <p>Da equação (1): ${formatEquation([a1, b1], ['x', 'y'], c1)}</p>
+                    <p>${b1}y = ${c1} - ${a1}x</p>
+                    <p>y = ${formatNumber(expr1.const)} + (${formatNumber(expr1.coef)})x</p>
+                    <p>Da equação (2): ${formatEquation([a2, b2], ['x', 'y'], c2)}</p>
+                    <p>${b2}y = ${c2} - ${a2}x</p>
+                    <p>y = ${formatNumber(expr2.const)} + (${formatNumber(expr2.coef)})x</p>
+                </div>`);
+            }
+            
+            // Igualar as expressões
+            steps.push(`<div class="step-box">
+                <p>3. Igualar as expressões para ${varToIsolate}:</p>
+                <p>${formatNumber(expr1.const)} + (${formatNumber(expr1.coef)})${varToIsolate === 'x' ? 'y' : 'x'} = ${formatNumber(expr2.const)} + (${formatNumber(expr2.coef)})${varToIsolate === 'x' ? 'y' : 'x'}</p>
+            </div>`);
+            
+            // Resolver para a outra variável
+            const coefDiff = expr1.coef - expr2.coef;
+            const constDiff = expr2.const - expr1.const;
+            
+            if (Math.abs(coefDiff) < 1e-10) {
+                if (Math.abs(constDiff) < 1e-10) {
+                    steps.push(`<div class="step-box">
+                        <p>4. A equação se reduz a 0 = 0, indicando que o sistema possui infinitas soluções (SPI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SPI'};
+                } else {
+                    steps.push(`<div class="step-box">
+                        <p>4. A equação se reduz a 0 = ${formatNumber(constDiff)}, indicando que o sistema é impossível (SI).</p>
+                    </div></div>`);
+                    return {steps: steps.join(''), solution: null, type: 'SI'};
+                }
+            }
+            
+            const otherVarValue = constDiff / coefDiff;
+            const otherVar = varToIsolate === 'x' ? 'y' : 'x';
+            
+            steps.push(`<div class="step-box">
+                <p>4. Resolver para ${otherVar}:</p>
+                <p>${formatNumber(expr1.coef - expr2.coef)}${otherVar} = ${formatNumber(constDiff)}</p>
+                <p>${otherVar} = ${formatNumber(constDiff)} / ${formatNumber(coefDiff)} = ${formatNumber(otherVarValue)}</p>
+            </div>`);
+            
+            // Substituir para encontrar a variável original
+            let mainVarValue;
+            if (varToIsolate === 'x') {
+                mainVarValue = expr1.const + expr1.coef * otherVarValue;
+                steps.push(`<div class="step-box">
+                    <p>5. Substituir y = ${formatNumber(otherVarValue)} na expressão para x:</p>
+                    <p>x = ${formatNumber(expr1.const)} + (${formatNumber(expr1.coef)}) × ${formatNumber(otherVarValue)}</p>
+                    <p>x = ${formatNumber(mainVarValue)}</p>
+                </div>`);
+            } else {
+                mainVarValue = expr1.const + expr1.coef * otherVarValue;
+                steps.push(`<div class="step-box">
+                    <p>5. Substituir x = ${formatNumber(otherVarValue)} na expressão para y:</p>
+                    <p>y = ${formatNumber(expr1.const)} + (${formatNumber(expr1.coef)}) × ${formatNumber(otherVarValue)}</p>
+                    <p>y = ${formatNumber(mainVarValue)}</p>
+                </div>`);
+            }
+            
+            const solution = varToIsolate === 'x' 
+                ? {x: mainVarValue, y: otherVarValue} 
+                : {x: otherVarValue, y: mainVarValue};
+            
+            steps.push(`<div class="step-box">
+                <p>6. Solução:</p>
+                <p>x = ${formatNumber(solution.x)}</p>
+                <p>y = ${formatNumber(solution.y)}</p>
+            </div></div>`);
+            
+            return {steps: steps.join(''), solution, type: 'SPD'};
+        }
+
+        // Verificar solução para sistema 2x2
+        function verifySolution2(a1, b1, c1, a2, b2, c2, x, y) {
+            const eq1 = Math.abs(a1*x + b1*y - c1) < 1e-10;
+            const eq2 = Math.abs(a2*x + b2*y - c2) < 1e-10;
+            
+            return `<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Verificação da Solução</h3>
+                <div class="step-box">
+                    <p>Substituindo x = ${formatNumber(x)} e y = ${formatNumber(y)}:</p>
+                    <p>Equação 1: ${a1}(${formatNumber(x)}) + ${b1}(${formatNumber(y)}) = ${formatNumber(a1*x + b1*y)} ${eq1 ? '✓' : '✗'}</p>
+                    <p>Equação 2: ${a2}(${formatNumber(x)}) + ${b2}(${formatNumber(y)}) = ${formatNumber(a2*x + b2*y)} ${eq2 ? '✓' : '✗'}</p>
+                </div>
+            </div>`;
+        }
+
+        // Métodos de resolução para sistemas 3x3
+        // (Implementações para substituição, eliminação, Cramer e matriz inversa para 3x3)
+        
+        // Funções de escalonamento para 3x3
+        function solveBy3x3Elimination(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3) {
+            const coeffMatrix = [
+                [a1, b1, c1],
+                [a2, b2, c2],
+                [a3, b3, c3]
+            ];
+            
+            const constants = [d1, d2, d3];
+            
+            return gaussianElimination(coeffMatrix, constants);
+        }
+        
+        function solveBy3x3Cramer(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Regra de Cramer (3x3)</h3>
+                <div class="step-box">
+                    <p>1. Sistema original:</p>
+                    <p>${formatEquation([a1, b1, c1], ['x', 'y', 'z'], d1)}</p>
+                    <p>${formatEquation([a2, b2, c2], ['x', 'y', 'z'], d2)}</p>
+                    <p>${formatEquation([a3, b3, c3], ['x', 'y', 'z'], d3)}</p>
+                </div>
+            `);
+
+            // Calcular determinante principal
+            const A = [[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]];
+            const D = determinant3x3(A);
+            steps.push(`<div class="step-box">
+                <p>2. Determinante principal (D):</p>
+                <pre class="matrix-display">${formatMatrix(A)}</pre>
+                <p>D = ${formatNumber(D)}</p>
+            </div>`);
+
+            if (Math.abs(D) < 1e-10) {
+                steps.push(`<div class="step-box">
+                    <p>3. Como D = 0, o sistema não tem solução única.</p>
+                    <p>O sistema ou é impossível (SI) ou possui infinitas soluções (SPI).</p>
+                    <p>Para determinar qual é o caso, seria necessário analisar o posto da matriz ampliada.</p>
+                </div></div>`);
+                return {steps: steps.join(''), solution: null, type: 'Indeterminado'};
+            }
+
+            // Calcular Dx (substituir coluna de x pelos termos independentes)
+            const Ax = [
+                [d1, b1, c1],
+                [d2, b2, c2],
+                [d3, b3, c3]
+            ];
+            const Dx = determinant3x3(Ax);
+            steps.push(`<div class="step-box">
+                <p>3. Determinante Dx (substituir coluna de x pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Ax)}</pre>
+                <p>Dx = ${formatNumber(Dx)}</p>
+            </div>`);
+
+            // Calcular Dy (substituir coluna de y pelos termos independentes)
+            const Ay = [
+                [a1, d1, c1],
+                [a2, d2, c2],
+                [a3, d3, c3]
+            ];
+            const Dy = determinant3x3(Ay);
+            steps.push(`<div class="step-box">
+                <p>4. Determinante Dy (substituir coluna de y pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Ay)}</pre>
+                <p>Dy = ${formatNumber(Dy)}</p>
+            </div>`);
+
+            // Calcular Dz (substituir coluna de z pelos termos independentes)
+            const Az = [
+                [a1, b1, d1],
+                [a2, b2, d2],
+                [a3, b3, d3]
+            ];
+            const Dz = determinant3x3(Az);
+            steps.push(`<div class="step-box">
+                <p>5. Determinante Dz (substituir coluna de z pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Az)}</pre>
+                <p>Dz = ${formatNumber(Dz)}</p>
+            </div>`);
+
+            // Calcular x, y e z
+            const x = Dx / D;
+            const y = Dy / D;
+            const z = Dz / D;
+            
+            steps.push(`<div class="step-box">
+                <p>6. Calcular x, y e z:</p>
+                <p>x = Dx/D = ${formatNumber(Dx)}/${formatNumber(D)} = ${formatNumber(x)}</p>
+                <p>y = Dy/D = ${formatNumber(Dy)}/${formatNumber(D)} = ${formatNumber(y)}</p>
+                <p>z = Dz/D = ${formatNumber(Dz)}/${formatNumber(D)} = ${formatNumber(z)}</p>
+            </div>`);
+
+            steps.push(`<div class="step-box">
+                <p>7. Solução:</p>
+                <p>x = ${formatNumber(x)}</p>
+                <p>y = ${formatNumber(y)}</p>
+                <p>z = ${formatNumber(z)}</p>
+            </div></div>`);
+
+            return {steps: steps.join(''), solution: {x, y, z}, type: 'SPD'};
+        }
+
+        function solveBy3x3Matrix(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Método da Matriz Inversa (3x3)</h3>
+                <div class="step-box">
+                    <p>1. Sistema na forma matricial AX = B:</p>
+                    <pre class="matrix-display">A = ${formatMatrix([[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]])}</pre>
+                    <pre class="matrix-display">B = ${formatMatrix([[d1], [d2], [d3]])}</pre>
+                </div>
+            `);
+
+            // Verificar se a matriz é inversível
+            const A = [[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]];
+            const det = determinant3x3(A);
+            
+            steps.push(`<div class="step-box">
+                <p>2. Calcular o determinante de A para verificar inversibilidade:</p>
+                <p>det(A) = ${formatNumber(det)}</p>
+            </div>`);
+            
+            if (Math.abs(det) < 1e-10) {
+                steps.push(`<div class="step-box">
+                    <p>3. Como det(A) = 0, a matriz A não é inversível.</p>
+                    <p>O sistema ou é impossível (SI) ou possui infinitas soluções (SPI).</p>
+                </div></div>`);
+                return {steps: steps.join(''), solution: null, type: 'Indeterminado'};
+            }
+            
+            // Calcular a matriz inversa
+            const invA = inverseMatrix(A);
+            
+            steps.push(`<div class="step-box">
+                <p>3. Calcular a matriz inversa de A:</p>
+                <pre class="matrix-display">A⁻¹ = ${formatMatrix(invA)}</pre>
+            </div>`);
+            
+            // Calcular a solução X = A^(-1)B
+            const B = [[d1], [d2], [d3]];
+            const X = multiplyMatrix(invA, B);
+            
+            steps.push(`<div class="step-box">
+                <p>4. Calcular X = A⁻¹B:</p>
+                <pre class="matrix-display">X = ${formatMatrix(X)}</pre>
+            </div>`);
+            
+            const x = X[0][0];
+            const y = X[1][0];
+            const z = X[2][0];
+            
+            steps.push(`<div class="step-box">
+                <p>5. Solução:</p>
+                <p>x = ${formatNumber(x)}</p>
+                <p>y = ${formatNumber(y)}</p>
+                <p>z = ${formatNumber(z)}</p>
+            </div></div>`);
+            
+            return {steps: steps.join(''), solution: {x, y, z}, type: 'SPD'};
+        }
+
+        function solveBy3x3Substitution(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Método da Substituição (3x3)</h3>
+                <div class="step-box">
+                    <p>1. Sistema original:</p>
+                    <p>${formatEquation([a1, b1, c1], ['x', 'y', 'z'], d1)} (1)</p>
+                    <p>${formatEquation([a2, b2, c2], ['x', 'y', 'z'], d2)} (2)</p>
+                    <p>${formatEquation([a3, b3, c3], ['x', 'y', 'z'], d3)} (3)</p>
+                </div>
+            `);
+            
+            // Isolar x na primeira equação se possível
+            if (Math.abs(a1) < 1e-10) {
+                steps.push(`<div class="step-box">
+                    <p>2. O coeficiente de x na primeira equação é zero ou próximo de zero.</p>
+                    <p>Para este método, vamos usar o escalonamento para resolver o sistema.</p>
+                </div></div>`);
+                
+                // Redirecionar para o método de escalonamento
+                return solveBy3x3Elimination(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3);
+            }
+            
+            const x_coeff_y = -b1 / a1;
+            const x_coeff_z = -c1 / a1;
+            const x_const = d1 / a1;
+            
+            steps.push(`<div class="step-box">
+                <p>2. Isolar x na equação (1):</p>
+                <p>${formatEquation([a1, b1, c1], ['x', 'y', 'z'], d1)}</p>
+                <p>${a1}x = ${d1} - ${b1}y - ${c1}z</p>
+                <p>x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)})y + (${formatNumber(x_coeff_z)})z</p>
+            </div>`);
+            
+            // Substituir x na segunda equação
+            const new_y_coeff_2 = b2 + a2 * x_coeff_y;
+            const new_z_coeff_2 = c2 + a2 * x_coeff_z;
+            const new_const_2 = d2 - a2 * x_const;
+            
+            steps.push(`<div class="step-box">
+                <p>3. Substituir x na equação (2):</p>
+                <p>${formatEquation([a2, b2, c2], ['x', 'y', 'z'], d2)}</p>
+                <p>Substituindo x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)})y + (${formatNumber(x_coeff_z)})z:</p>
+                <p>${a2}(${formatNumber(x_const)} + (${formatNumber(x_coeff_y)})y + (${formatNumber(x_coeff_z)})z) + ${b2}y + ${c2}z = ${d2}</p>
+                <p>${formatNumber(a2 * x_const)} + ${formatNumber(a2 * x_coeff_y)}y + ${formatNumber(a2 * x_coeff_z)}z + ${b2}y + ${c2}z = ${d2}</p>
+                <p>${formatNumber(a2 * x_coeff_y + b2)}y + ${formatNumber(a2 * x_coeff_z + c2)}z = ${formatNumber(d2 - a2 * x_const)}</p>
+            </div>`);
+            
+            // Substituir x na terceira equação
+            const new_y_coeff_3 = b3 + a3 * x_coeff_y;
+            const new_z_coeff_3 = c3 + a3 * x_coeff_z;
+            const new_const_3 = d3 - a3 * x_const;
+            
+            steps.push(`<div class="step-box">
+                <p>4. Substituir x na equação (3):</p>
+                <p>${formatEquation([a3, b3, c3], ['x', 'y', 'z'], d3)}</p>
+                <p>Substituindo x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)})y + (${formatNumber(x_coeff_z)})z:</p>
+                <p>${a3}(${formatNumber(x_const)} + (${formatNumber(x_coeff_y)})y + (${formatNumber(x_coeff_z)})z) + ${b3}y + ${c3}z = ${d3}</p>
+                <p>${formatNumber(a3 * x_const)} + ${formatNumber(a3 * x_coeff_y)}y + ${formatNumber(a3 * x_coeff_z)}z + ${b3}y + ${c3}z = ${d3}</p>
+                <p>${formatNumber(a3 * x_coeff_y + b3)}y + ${formatNumber(a3 * x_coeff_z + c3)}z = ${formatNumber(d3 - a3 * x_const)}</p>
+            </div>`);
+            
+            // Agora temos um sistema 2x2 com y e z
+            steps.push(`<div class="step-box">
+                <p>5. Novo sistema 2x2 em y e z:</p>
+                <p>${formatEquation([new_y_coeff_2, new_z_coeff_2], ['y', 'z'], new_const_2)} (4)</p>
+                <p>${formatEquation([new_y_coeff_3, new_z_coeff_3], ['y', 'z'], new_const_3)} (5)</p>
+            </div>`);
+            
+            // Resolver o sistema 2x2 para y e z
+            // Isolar y na equação 4 se possível
+            if (Math.abs(new_y_coeff_2) < 1e-10) {
+                // Se o coeficiente de y é zero, tentamos isolar z
+                if (Math.abs(new_z_coeff_2) < 1e-10) {
+                    // Se ambos coeficientes são zero, verificar consistência
+                    if (Math.abs(new_const_2) < 1e-10) {
+                        // 0 = 0, equação redundante
+                        // Continuar com a equação 5
+                        if (Math.abs(new_y_coeff_3) < 1e-10) {
+                            // Não conseguimos isolar y em nenhuma equação
+                            steps.push(`<div class="step-box">
+                                <p>6. O sistema resultante não permite isolar y facilmente.</p>
+                                <p>Vamos recorrer ao método de escalonamento.</p>
+                            </div></div>`);
+                            
+                            return solveBy3x3Elimination(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3);
+                        } else {
+                            const y_value = new_const_3 / new_y_coeff_3 - (new_z_coeff_3 / new_y_coeff_3) * 0;
+                            // Podemos usar um valor arbitrário para z
+                            const z_value = 0;
+                            
+                            steps.push(`<div class="step-box">
+                                <p>6. A equação (4) é redundante. Da equação (5), fazendo z = 0 (arbitrário):</p>
+                                <p>${formatNumber(new_y_coeff_3)}y = ${formatNumber(new_const_3)} - ${formatNumber(new_z_coeff_3)}z</p>
+                                <p>${formatNumber(new_y_coeff_3)}y = ${formatNumber(new_const_3)} - ${formatNumber(new_z_coeff_3)} × 0</p>
+                                <p>y = ${formatNumber(y_value)}</p>
+                            </div>`);
+                            
+                            // Substituir y e z para encontrar x
+                            const x_value = x_const + x_coeff_y * y_value + x_coeff_z * z_value;
+                            
+                            steps.push(`<div class="step-box">
+                                <p>7. Substituir y = ${formatNumber(y_value)} e z = ${formatNumber(z_value)} para encontrar x:</p>
+                                <p>x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)}) × ${formatNumber(y_value)} + (${formatNumber(x_coeff_z)}) × ${formatNumber(z_value)}</p>
+                                <p>x = ${formatNumber(x_value)}</p>
+                            </div>`);
+                            
+                            steps.push(`<div class="step-box">
+                                <p>8. Solução (com z arbitrário):</p>
+                                <p>x = ${formatNumber(x_value)} - (${formatNumber(-x_coeff_z)})t</p>
+                                <p>y = ${formatNumber(y_value)} - (${formatNumber(-new_z_coeff_3/new_y_coeff_3)})t</p>
+                                <p>z = t (parâmetro livre)</p>
+                                <p>O sistema possui infinitas soluções (SPI).</p>
+                            </div></div>`);
+                            
+                            return {
+                                steps: steps.join(''), 
+                                solution: {
+                                    x: x_value, 
+                                    y: y_value, 
+                                    z: z_value, 
+                                    type: 'parametric'
+                                }, 
+                                type: 'SPI'
+                            };
+                        }
+                    } else {
+                        // 0 = não zero, sistema impossível
+                        steps.push(`<div class="step-box">
+                            <p>6. A equação (4) se reduz a 0 = ${formatNumber(new_const_2)}, que é inconsistente.</p>
+                            <p>O sistema não possui solução (SI).</p>
+                        </div></div>`);
+                        
+                        return {steps: steps.join(''), solution: null, type: 'SI'};
+                    }
+                } else {
+                    // Podemos isolar z na equação 4
+                    const z_value = new_const_2 / new_z_coeff_2;
+                    
+                    steps.push(`<div class="step-box">
+                        <p>6. Isolar z na equação (4):</p>
+                        <p>${formatNumber(new_z_coeff_2)}z = ${formatNumber(new_const_2)}</p>
+                        <p>z = ${formatNumber(z_value)}</p>
+                    </div>`);
+                    
+                    // Substituir z na equação 5 para encontrar y
+                    const y_value = (new_const_3 - new_z_coeff_3 * z_value) / new_y_coeff_3;
+                    
+                    steps.push(`<div class="step-box">
+                        <p>7. Substituir z = ${formatNumber(z_value)} na equação (5) para encontrar y:</p>
+                        <p>${formatNumber(new_y_coeff_3)}y + ${formatNumber(new_z_coeff_3)}(${formatNumber(z_value)}) = ${formatNumber(new_const_3)}</p>
+                        <p>${formatNumber(new_y_coeff_3)}y = ${formatNumber(new_const_3)} - ${formatNumber(new_z_coeff_3 * z_value)}</p>
+                        <p>y = ${formatNumber(y_value)}</p>
+                    </div>`);
+                    
+                    // Substituir y e z para encontrar x
+                    const x_value = x_const + x_coeff_y * y_value + x_coeff_z * z_value;
+                    
+                    steps.push(`<div class="step-box">
+                        <p>8. Substituir y = ${formatNumber(y_value)} e z = ${formatNumber(z_value)} para encontrar x:</p>
+                        <p>x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)}) × ${formatNumber(y_value)} + (${formatNumber(x_coeff_z)}) × ${formatNumber(z_value)}</p>
+                        <p>x = ${formatNumber(x_value)}</p>
+                    </div>`);
+                    
+                    steps.push(`<div class="step-box">
+                        <p>9. Solução:</p>
+                        <p>x = ${formatNumber(x_value)}</p>
+                        <p>y = ${formatNumber(y_value)}</p>
+                        <p>z = ${formatNumber(z_value)}</p>
+                    </div></div>`);
+                    
+                    return {steps: steps.join(''), solution: {x: x_value, y: y_value, z: z_value}, type: 'SPD'};
+                }
+            } else {
+                // Isolar y na equação 4
+                const y_coeff_z = -new_z_coeff_2 / new_y_coeff_2;
+                const y_const = new_const_2 / new_y_coeff_2;
+                
+                steps.push(`<div class="step-box">
+                    <p>6. Isolar y na equação (4):</p>
+                    <p>${formatNumber(new_y_coeff_2)}y + ${formatNumber(new_z_coeff_2)}z = ${formatNumber(new_const_2)}</p>
+                    <p>${formatNumber(new_y_coeff_2)}y = ${formatNumber(new_const_2)} - ${formatNumber(new_z_coeff_2)}z</p>
+                    <p>y = ${formatNumber(y_const)} + (${formatNumber(y_coeff_z)})z</p>
+                </div>`);
+                
+                // Substituir y na equação 5
+                const new_z_coeff = new_z_coeff_3 + new_y_coeff_3 * y_coeff_z;
+                const new_const = new_const_3 - new_y_coeff_3 * y_const;
+                
+                steps.push(`<div class="step-box">
+                    <p>7. Substituir y na equação (5):</p>
+                    <p>${formatNumber(new_y_coeff_3)}y + ${formatNumber(new_z_coeff_3)}z = ${formatNumber(new_const_3)}</p>
+                    <p>${formatNumber(new_y_coeff_3)}(${formatNumber(y_const)} + (${formatNumber(y_coeff_z)})z) + ${formatNumber(new_z_coeff_3)}z = ${formatNumber(new_const_3)}</p>
+                    <p>${formatNumber(new_y_coeff_3 * y_const)} + ${formatNumber(new_y_coeff_3 * y_coeff_z)}z + ${formatNumber(new_z_coeff_3)}z = ${formatNumber(new_const_3)}</p>
+                    <p>${formatNumber(new_y_coeff_3 * y_coeff_z + new_z_coeff_3)}z = ${formatNumber(new_const_3 - new_y_coeff_3 * y_const)}</p>
+                </div>`);
+                
+                // Resolver para z
+                if (Math.abs(new_z_coeff) < 1e-10) {
+                    if (Math.abs(new_const) < 1e-10) {
+                        // 0 = 0, infinitas soluções, z é livre
+                        const z_value = 0;  // Valor arbitrário
+                        const y_value = y_const + y_coeff_z * z_value;
+                        const x_value = x_const + x_coeff_y * y_value + x_coeff_z * z_value;
+                        
+                        steps.push(`<div class="step-box">
+                            <p>8. A equação resultante é 0 = 0, que é satisfeita para qualquer valor de z.</p>
+                            <p>Isto indica que o sistema possui infinitas soluções (SPI).</p>
+                            <p>Escolhendo z = 0 (valor arbitrário):</p>
+                            <p>y = ${formatNumber(y_const)} + (${formatNumber(y_coeff_z)}) × 0 = ${formatNumber(y_value)}</p>
+                            <p>x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)}) × ${formatNumber(y_value)} + (${formatNumber(x_coeff_z)}) × 0 = ${formatNumber(x_value)}</p>
+                        </div>`);
+                        
+                        steps.push(`<div class="step-box">
+                            <p>9. Solução geral (com z como parâmetro livre t):</p>
+                            <p>x = ${formatNumber(x_value)} + (${formatNumber(x_coeff_z + x_coeff_y * y_coeff_z)})t</p>
+                            <p>y = ${formatNumber(y_value)} + (${formatNumber(y_coeff_z)})t</p>
+                            <p>z = t</p>
+                        </div></div>`);
+                        
+                        return {
+                            steps: steps.join(''), 
+                            solution: {
+                                x: x_value, 
+                                y: y_value, 
+                                z: z_value, 
+                                type: 'parametric'
+                            }, 
+                            type: 'SPI'
+                        };
+                    } else {
+                        // 0 = não zero, sistema impossível
+                        steps.push(`<div class="step-box">
+                            <p>8. A equação resultante é 0 = ${formatNumber(new_const)}, que é inconsistente.</p>
+                            <p>O sistema não possui solução (SI).</p>
+                        </div></div>`);
+                        
+                        return {steps: steps.join(''), solution: null, type: 'SI'};
+                    }
+                }
+                
+                const z_value = new_const / new_z_coeff;
+                
+                steps.push(`<div class="step-box">
+                    <p>8. Resolver para z:</p>
+                    <p>${formatNumber(new_z_coeff)}z = ${formatNumber(new_const)}</p>
+                    <p>z = ${formatNumber(z_value)}</p>
+                </div>`);
+                
+                // Substituir z para encontrar y
+                const y_value = y_const + y_coeff_z * z_value;
+                
+                steps.push(`<div class="step-box">
+                    <p>9. Substituir z = ${formatNumber(z_value)} para encontrar y:</p>
+                    <p>y = ${formatNumber(y_const)} + (${formatNumber(y_coeff_z)}) × ${formatNumber(z_value)}</p>
+                    <p>y = ${formatNumber(y_value)}</p>
+                </div>`);
+                
+                // Substituir y e z para encontrar x
+                const x_value = x_const + x_coeff_y * y_value + x_coeff_z * z_value;
+                
+                steps.push(`<div class="step-box">
+                    <p>10. Substituir y = ${formatNumber(y_value)} e z = ${formatNumber(z_value)} para encontrar x:</p>
+                    <p>x = ${formatNumber(x_const)} + (${formatNumber(x_coeff_y)}) × ${formatNumber(y_value)} + (${formatNumber(x_coeff_z)}) × ${formatNumber(z_value)}</p>
+                    <p>x = ${formatNumber(x_value)}</p>
+                </div>`);
+                
+                steps.push(`<div class="step-box">
+                    <p>11. Solução:</p>
+                    <p>x = ${formatNumber(x_value)}</p>
+                    <p>y = ${formatNumber(y_value)}</p>
+                    <p>z = ${formatNumber(z_value)}</p>
+                </div></div>`);
+                
+                return {steps: steps.join(''), solution: {x: x_value, y: y_value, z: z_value}, type: 'SPD'};
+            }
+        }
+
+        // Verificar solução para sistema 3x3
+        function verifySolution3(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, x, y, z) {
+            const eq1 = Math.abs(a1*x + b1*y + c1*z - d1) < 1e-10;
+            const eq2 = Math.abs(a2*x + b2*y + c2*z - d2) < 1e-10;
+            const eq3 = Math.abs(a3*x + b3*y + c3*z - d3) < 1e-10;
+            
+            return `<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Verificação da Solução</h3>
+                <div class="step-box">
+                    <p>Substituindo x = ${formatNumber(x)}, y = ${formatNumber(y)} e z = ${formatNumber(z)}:</p>
+                    <p>Equação 1: ${a1}(${formatNumber(x)}) + ${b1}(${formatNumber(y)}) + ${c1}(${formatNumber(z)}) = ${formatNumber(a1*x + b1*y + c1*z)} ${eq1 ? '✓' : '✗'}</p>
+                    <p>Equação 2: ${a2}(${formatNumber(x)}) + ${b2}(${formatNumber(y)}) + ${c2}(${formatNumber(z)}) = ${formatNumber(a2*x + b2*y + c2*z)} ${eq2 ? '✓' : '✗'}</p>
+                    <p>Equação 3: ${a3}(${formatNumber(x)}) + ${b3}(${formatNumber(y)}) + ${c3}(${formatNumber(z)}) = ${formatNumber(a3*x + b3*y + c3*z)} ${eq3 ? '✓' : '✗'}</p>
+                </div>
+            </div>`;
+        }
+        
+        // Métodos de resolução para sistemas 4x4
+        function solveBy4x4Elimination(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4) {
+            const coeffMatrix = [
+                [a1, b1, c1, d1],
+                [a2, b2, c2, d2],
+                [a3, b3, c3, d3],
+                [a4, b4, c4, d4]
+            ];
+            
+            const constants = [e1, e2, e3, e4];
+            
+            return gaussianElimination(coeffMatrix, constants);
+        }
+        
+        function solveBy4x4Cramer(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Regra de Cramer (4x4)</h3>
+                <div class="step-box">
+                    <p>1. Sistema original:</p>
+                    <p>${formatEquation([a1, b1, c1, d1], ['x', 'y', 'z', 'w'], e1)}</p>
+                    <p>${formatEquation([a2, b2, c2, d2], ['x', 'y', 'z', 'w'], e2)}</p>
+                    <p>${formatEquation([a3, b3, c3, d3], ['x', 'y', 'z', 'w'], e3)}</p>
+                    <p>${formatEquation([a4, b4, c4, d4], ['x', 'y', 'z', 'w'], e4)}</p>
+                </div>
+            `);
+            
+            // Matriz principal
+            const A = [
+                [a1, b1, c1, d1],
+                [a2, b2, c2, d2],
+                [a3, b3, c3, d3],
+                [a4, b4, c4, d4]
+            ];
+            
+            const D = determinant4x4(A);
+            steps.push(`<div class="step-box">
+                <p>2. Determinante principal (D):</p>
+                <pre class="matrix-display">${formatMatrix(A)}</pre>
+                <p>D = ${formatNumber(D)}</p>
+            </div>`);
+            
+            if (Math.abs(D) < 1e-10) {
+                steps.push(`<div class="step-box">
+                    <p>3. Como D = 0, o sistema não tem solução única.</p>
+                    <p>O sistema ou é impossível (SI) ou possui infinitas soluções (SPI).</p>
+                </div></div>`);
+                return {steps: steps.join(''), solution: null, type: 'Indeterminado'};
+            }
+            
+            // Matriz Dx
+            const Ax = [
+                [e1, b1, c1, d1],
+                [e2, b2, c2, d2],
+                [e3, b3, c3, d3],
+                [e4, b4, c4, d4]
+            ];
+            
+            const Dx = determinant4x4(Ax);
+            steps.push(`<div class="step-box">
+                <p>3. Determinante Dx (substituir coluna de x pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Ax)}</pre>
+                <p>Dx = ${formatNumber(Dx)}</p>
+            </div>`);
+            
+            // Matriz Dy
+            const Ay = [
+                [a1, e1, c1, d1],
+                [a2, e2, c2, d2],
+                [a3, e3, c3, d3],
+                [a4, e4, c4, d4]
+            ];
+            
+            const Dy = determinant4x4(Ay);
+            steps.push(`<div class="step-box">
+                <p>4. Determinante Dy (substituir coluna de y pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Ay)}</pre>
+                <p>Dy = ${formatNumber(Dy)}</p>
+            </div>`);
+            
+            // Matriz Dz
+            const Az = [
+                [a1, b1, e1, d1],
+                [a2, b2, e2, d2],
+                [a3, b3, e3, d3],
+                [a4, b4, e4, d4]
+            ];
+            
+            const Dz = determinant4x4(Az);
+            steps.push(`<div class="step-box">
+                <p>5. Determinante Dz (substituir coluna de z pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Az)}</pre>
+                <p>Dz = ${formatNumber(Dz)}</p>
+            </div>`);
+            
+            // Matriz Dw
+            const Aw = [
+                [a1, b1, c1, e1],
+                [a2, b2, c2, e2],
+                [a3, b3, c3, e3],
+                [a4, b4, c4, e4]
+            ];
+            
+            const Dw = determinant4x4(Aw);
+            steps.push(`<div class="step-box">
+                <p>6. Determinante Dw (substituir coluna de w pelos termos independentes):</p>
+                <pre class="matrix-display">${formatMatrix(Aw)}</pre>
+                <p>Dw = ${formatNumber(Dw)}</p>
+            </div>`);
+            
+            // Calcular solução
+            const x = Dx / D;
+            const y = Dy / D;
+            const z = Dz / D;
+            const w = Dw / D;
+            
+            steps.push(`<div class="step-box">
+                <p>7. Calcular x, y, z e w:</p>
+                <p>x = Dx/D = ${formatNumber(Dx)}/${formatNumber(D)} = ${formatNumber(x)}</p>
+                <p>y = Dy/D = ${formatNumber(Dy)}/${formatNumber(D)} = ${formatNumber(y)}</p>
+                <p>z = Dz/D = ${formatNumber(Dz)}/${formatNumber(D)} = ${formatNumber(z)}</p>
+                <p>w = Dw/D = ${formatNumber(Dw)}/${formatNumber(D)} = ${formatNumber(w)}</p>
+            </div>`);
+            
+            steps.push(`<div class="step-box">
+                <p>8. Solução:</p>
+                <p>x = ${formatNumber(x)}</p>
+                <p>y = ${formatNumber(y)}</p>
+                <p>z = ${formatNumber(z)}</p>
+                <p>w = ${formatNumber(w)}</p>
+            </div></div>`);
+            
+            return {steps: steps.join(''), solution: {x, y, z, w}, type: 'SPD'};
+        }
+        
+        function solveBy4x4Matrix(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4) {
+            const steps = [];
+            
+            steps.push(`<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Método da Matriz Inversa (4x4)</h3>
+                <div class="step-box">
+                    <p>1. Sistema na forma matricial AX = B:</p>
+                    <pre class="matrix-display">A = ${formatMatrix([[a1, b1, c1, d1], [a2, b2, c2, d2], [a3, b3, c3, d3], [a4, b4, c4, d4]])}</pre>
+                    <pre class="matrix-display">B = ${formatMatrix([[e1], [e2], [e3], [e4]])}</pre>
+                </div>
+            `);
+            
+            // Verificar se a matriz é inversível
+            const A = [[a1, b1, c1, d1], [a2, b2, c2, d2], [a3, b3, c3, d3], [a4, b4, c4, d4]];
+            const det = determinant4x4(A);
+            
+            steps.push(`<div class="step-box">
+                <p>2. Calcular o determinante de A para verificar inversibilidade:</p>
+                <p>det(A) = ${formatNumber(det)}</p>
+            </div>`);
+            
+            if (Math.abs(det) < 1e-10) {
+                steps.push(`<div class="step-box">
+                    <p>3. Como det(A) = 0, a matriz A não é inversível.</p>
+                    <p>O sistema ou é impossível (SI) ou possui infinitas soluções (SPI).</p>
+                </div></div>`);
+                return {steps: steps.join(''), solution: null, type: 'Indeterminado'};
+            }
+            
+            // Calcular a matriz inversa
+            const invA = inverseMatrix(A);
+            
+            steps.push(`<div class="step-box">
+                <p>3. Calcular a matriz inversa de A:</p>
+                <pre class="matrix-display">A⁻¹ = ${formatMatrix(invA)}</pre>
+            </div>`);
+            
+            // Calcular a solução X = A^(-1)B
+            const B = [[e1], [e2], [e3], [e4]];
+            const X = multiplyMatrix(invA, B);
+            
+            steps.push(`<div class="step-box">
+                <p>4. Calcular X = A⁻¹B:</p>
+                <pre class="matrix-display">X = ${formatMatrix(X)}</pre>
+            </div>`);
+            
+            const x = X[0][0];
+            const y = X[1][0];
+            const z = X[2][0];
+            const w = X[3][0];
+            
+            steps.push(`<div class="step-box">
+                <p>5. Solução:</p>
+                <p>x = ${formatNumber(x)}</p>
+                <p>y = ${formatNumber(y)}</p>
+                <p>z = ${formatNumber(z)}</p>
+                <p>w = ${formatNumber(w)}</p>
+            </div></div>`);
+            
+            return {steps: steps.join(''), solution: {x, y, z, w}, type: 'SPD'};
+        }
+        
+        // Verificar solução para sistema 4x4
+        function verifySolution4(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4, x, y, z, w) {
+            const eq1 = Math.abs(a1*x + b1*y + c1*z + d1*w - e1) < 1e-10;
+            const eq2 = Math.abs(a2*x + b2*y + c2*z + d2*w - e2) < 1e-10;
+            const eq3 = Math.abs(a3*x + b3*y + c3*z + d3*w - e3) < 1e-10;
+            const eq4 = Math.abs(a4*x + b4*y + c4*z + d4*w - e4) < 1e-10;
+            
+            return `<div class="method-box">
+                <h3 class="font-bold text-xl mb-2">Verificação da Solução</h3>
+                <div class="step-box">
+                    <p>Substituindo x = ${formatNumber(x)}, y = ${formatNumber(y)}, z = ${formatNumber(z)} e w = ${formatNumber(w)}:</p>
+                    <p>Equação 1: ${a1}(${formatNumber(x)}) + ${b1}(${formatNumber(y)}) + ${c1}(${formatNumber(z)}) + ${d1}(${formatNumber(w)}) = ${formatNumber(a1*x + b1*y + c1*z + d1*w)} ${eq1 ? '✓' : '✗'}</p>
+                    <p>Equação 2: ${a2}(${formatNumber(x)}) + ${b2}(${formatNumber(y)}) + ${c2}(${formatNumber(z)}) + ${d2}(${formatNumber(w)}) = ${formatNumber(a2*x + b2*y + c2*z + d2*w)} ${eq2 ? '✓' : '✗'}</p>
+                    <p>Equação 3: ${a3}(${formatNumber(x)}) + ${b3}(${formatNumber(y)}) + ${c3}(${formatNumber(z)}) + ${d3}(${formatNumber(w)}) = ${formatNumber(a3*x + b3*y + c3*z + d3*w)} ${eq3 ? '✓' : '✗'}</p>
+                    <p>Equação 4: ${a4}(${formatNumber(x)}) + ${b4}(${formatNumber(y)}) + ${c4}(${formatNumber(z)}) + ${d4}(${formatNumber(w)}) = ${formatNumber(a4*x + b4*y + c4*z + d4*w)} ${eq4 ? '✓' : '✗'}</p>
+                </div>
+            </div>`;
+        }
+        
+        // Função para carregar os exemplos
+        document.getElementById('loadExample1').addEventListener('click', () => {
+            document.getElementById('a1').value = 1;
+            document.getElementById('b1').value = 1;
+            document.getElementById('c1').value = 10;
+            document.getElementById('a2').value = 2;
+            document.getElementById('b2').value = -1;
+            document.getElementById('c2').value = 5;
+        });
+        
+        document.getElementById('loadExample2').addEventListener('click', () => {
+            document.getElementById('a1').value = 3;
+            document.getElementById('b1').value = 2;
+            document.getElementById('c1').value = 12;
+            document.getElementById('a2').value = -1;
+            document.getElementById('b2').value = 4;
+            document.getElementById('c2').value = 20;
+        });
+        
+        document.getElementById('loadExample3').addEventListener('click', () => {
+            document.getElementById('a1_3eq').value = 1;
+            document.getElementById('b1_3eq').value = 1;
+            document.getElementById('c1_3eq').value = 1;
+            document.getElementById('d1_3eq').value = 6;
+            document.getElementById('a2_3eq').value = 2;
+            document.getElementById('b2_3eq').value = -1;
+            document.getElementById('c2_3eq').value = 1;
+            document.getElementById('d2_3eq').value = 3;
+            document.getElementById('a3_3eq').value = 3;
+            document.getElementById('b3_3eq').value = 1;
+            document.getElementById('c3_3eq').value = -1;
+            document.getElementById('d3_3eq').value = 8;
+        });
+        
+        document.getElementById('loadExample4').addEventListener('click', () => {
+            document.getElementById('a1_3eq').value = 2;
+            document.getElementById('b1_3eq').value = 1;
+            document.getElementById('c1_3eq').value = -1;
+            document.getElementById('d1_3eq').value = 1;
+            document.getElementById('a2_3eq').value = 1;
+            document.getElementById('b2_3eq').value = 2;
+            document.getElementById('c2_3eq').value = 3;
+            document.getElementById('d2_3eq').value = 11;
+            document.getElementById('a3_3eq').value = 3;
+            document.getElementById('b3_3eq').value = -1;
+            document.getElementById('c3_3eq').value = -1;
+            document.getElementById('d3_3eq').value = -3;
+        });
+        
+        document.getElementById('loadExample5').addEventListener('click', () => {
+            document.getElementById('a1_4eq').value = 1;
+            document.getElementById('b1_4eq').value = 1;
+            document.getElementById('c1_4eq').value = 1;
+            document.getElementById('d1_4eq').value = 1;
+            document.getElementById('e1_4eq').value = 10;
+            document.getElementById('a2_4eq').value = 2;
+            document.getElementById('b2_4eq').value = -1;
+            document.getElementById('c2_4eq').value = 1;
+            document.getElementById('d2_4eq').value = -1;
+            document.getElementById('e2_4eq').value = 3;
+            document.getElementById('a3_4eq').value = 1;
+            document.getElementById('b3_4eq').value = 2;
+            document.getElementById('c3_4eq').value = -1;
+            document.getElementById('d3_4eq').value = 2;
+            document.getElementById('e3_4eq').value = 9;
+            document.getElementById('a4_4eq').value = -1;
+            document.getElementById('b4_4eq').value = 1;
+            document.getElementById('c4_4eq').value = 2;
+            document.getElementById('d4_4eq').value = 1;
+            document.getElementById('e4_4eq').value = 8;
+        });
+        
+        // Eventos de cálculo para cada tipo de sistema
+        document.getElementById('calculate2').addEventListener('click', () => {
+            const a1 = parseFloat(document.getElementById('a1').value);
+            const b1 = parseFloat(document.getElementById('b1').value);
+            const c1 = parseFloat(document.getElementById('c1').value);
+            const a2 = parseFloat(document.getElementById('a2').value);
+            const b2 = parseFloat(document.getElementById('b2').value);
+            const c2 = parseFloat(document.getElementById('c2').value);
+            const methodType = document.getElementById('methodType2').value;
+            const solution = document.getElementById('solution-content');
+            
+            if ([a1, b1, c1, a2, b2, c2].some(isNaN)) {
+                solution.innerHTML = `<div class="step-box">
+                    <h3 class="font-bold text-red-500">Erro:</h3>
+                    <p>Por favor, preencha todos os campos com números válidos.</p>
+                </div>`;
+                return;
+            }
+            
+            let result = '';
+            let finalSolution = null;
+            let solutionType = '';
+            
+            try {
+                solution.innerHTML = '<p class="text-center">Calculando...</p>';
+                
+                if (methodType === 'all' || methodType === 'substitution') {
+                    const subst = solveBySubstitution(a1, b1, c1, a2, b2, c2);
+                    result += subst.steps;
+                    if (!finalSolution && subst.solution) {
+                        finalSolution = subst.solution;
+                        solutionType = subst.type;
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'elimination') {
+                    const elim = solveByElimination(a1, b1, c1, a2, b2, c2);
+                    result += elim.steps;
+                    if (!finalSolution && elim.solution) {
+                        finalSolution = elim.solution;
+                        solutionType = elim.type;
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'cramer') {
+                    const cramer = solveByCramer(a1, b1, c1, a2, b2, c2);
+                    result += cramer.steps;
+                    if (!finalSolution && cramer.solution) {
+                        finalSolution = cramer.solution;
+                        solutionType = cramer.type;
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'matrix') {
+                    const matrix = solveByMatrix(a1, b1, c1, a2, b2, c2);
+                    result += matrix.steps;
+                    if (!finalSolution && matrix.solution) {
+                        finalSolution = matrix.solution;
+                        solutionType = matrix.type;
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'comparison') {
+                    const comparison = solveByComparison(a1, b1, c1, a2, b2, c2);
+                    result += comparison.steps;
+                    if (!finalSolution && comparison.solution) {
+                        finalSolution = comparison.solution;
+                        solutionType = comparison.type;
+                    }
+                }
+                
+                if (finalSolution && solutionType === 'SPD') {
+                    result += verifySolution2(a1, b1, c1, a2, b2, c2, finalSolution.x, finalSolution.y);
+                }
+                
+                // Classificação do sistema
+                result += `<div class="method-box">
+                    <h3 class="font-bold text-xl mb-2">Classificação do Sistema</h3>
+                    <div class="step-box">
+                        <p>Tipo de sistema: <strong>${solutionType === 'SPD' ? 'Sistema Possível e Determinado (solução única)' : 
+                            solutionType === 'SPI' ? 'Sistema Possível e Indeterminado (infinitas soluções)' : 
+                            'Sistema Impossível (sem solução)'}</strong></p>
+                    </div>
+                </div>`;
+                
+                solution.innerHTML = result;
+            } catch (error) {
+                solution.innerHTML = `<div class="step-box">
+                    <h3 class="font-bold text-red-500">Erro:</h3>
+                    <p>${error.message}</p>
+                </div>`;
+            }
+        });
+        
+        document.getElementById('calculate3').addEventListener('click', () => {
+            const a1 = parseFloat(document.getElementById('a1_3eq').value);
+            const b1 = parseFloat(document.getElementById('b1_3eq').value);
+            const c1 = parseFloat(document.getElementById('c1_3eq').value);
+            const d1 = parseFloat(document.getElementById('d1_3eq').value);
+            const a2 = parseFloat(document.getElementById('a2_3eq').value);
+            const b2 = parseFloat(document.getElementById('b2_3eq').value);
+            const c2 = parseFloat(document.getElementById('c2_3eq').value);
+            const d2 = parseFloat(document.getElementById('d2_3eq').value);
+            const a3 = parseFloat(document.getElementById('a3_3eq').value);
+            const b3 = parseFloat(document.getElementById('b3_3eq').value);
+            const c3 = parseFloat(document.getElementById('c3_3eq').value);
+            const d3 = parseFloat(document.getElementById('d3_3eq').value);
+            const methodType = document.getElementById('methodType3').value;
+            const solution = document.getElementById('solution-content');
+            
+            if ([a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3].some(isNaN)) {
+                solution.innerHTML = `<div class="step-box">
+                    <h3 class="font-bold text-red-500">Erro:</h3>
+                    <p>Por favor, preencha todos os campos com números válidos.</p>
+                </div>`;
+                return;
+            }
+            
+            let result = '';
+            let finalSolution = null;
+            let solutionType = '';
+            
+            try {
+                solution.innerHTML = '<p class="text-center">Calculando...</p>';
+                
+                if (methodType === 'all' || methodType === 'elimination') {
+                    const elim = solveBy3x3Elimination(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3);
+                    result += elim.steps;
+                    if (!finalSolution && elim.solution) {
+                        finalSolution = elim.solution;
+                        solutionType = 'SPD';
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'cramer') {
+                    const cramer = solveBy3x3Cramer(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3);
+                    result += cramer.steps;
+                    if (!finalSolution && cramer.solution) {
+                        finalSolution = cramer.solution;
+                        solutionType = cramer.type || 'SPD';
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'matrix') {
+                    const matrix = solveBy3x3Matrix(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3);
+                    result += matrix.steps;
+                    if (!finalSolution && matrix.solution) {
+                        finalSolution = matrix.solution;
+                        solutionType = matrix.type || 'SPD';
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'substitution') {
+                    const subst = solveBy3x3Substitution(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3);
+                    result += subst.steps;
+                    if (!finalSolution && subst.solution) {
+                        finalSolution = subst.solution;
+                        solutionType = subst.type || 'SPD';
+                    }
+                }
+                
+                if (finalSolution && solutionType === 'SPD') {
+                    result += verifySolution3(a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3, finalSolution.x, finalSolution.y, finalSolution.z);
+                }
+                
+                // Classificação do sistema
+                if (solutionType) {
+                    result += `<div class="method-box">
+                        <h3 class="font-bold text-xl mb-2">Classificação do Sistema</h3>
+                        <div class="step-box">
+                            <p>Tipo de sistema: <strong>${solutionType === 'SPD' ? 'Sistema Possível e Determinado (solução única)' : 
+                                solutionType === 'SPI' ? 'Sistema Possível e Indeterminado (infinitas soluções)' : 
+                                'Sistema Impossível (sem solução)'}</strong></p>
+                        </div>
+                    </div>`;
+                }
+                
+                solution.innerHTML = result;
+            } catch (error) {
+                solution.innerHTML = `<div class="step-box">
+                    <h3 class="font-bold text-red-500">Erro:</h3>
+                    <p>${error.message}</p>
+                </div>`;
+            }
+        });
+        
+        document.getElementById('calculate4').addEventListener('click', () => {
+            const a1 = parseFloat(document.getElementById('a1_4eq').value);
+            const b1 = parseFloat(document.getElementById('b1_4eq').value);
+            const c1 = parseFloat(document.getElementById('c1_4eq').value);
+            const d1 = parseFloat(document.getElementById('d1_4eq').value);
+            const e1 = parseFloat(document.getElementById('e1_4eq').value);
+            const a2 = parseFloat(document.getElementById('a2_4eq').value);
+            const b2 = parseFloat(document.getElementById('b2_4eq').value);
+            const c2 = parseFloat(document.getElementById('c2_4eq').value);
+            const d2 = parseFloat(document.getElementById('d2_4eq').value);
+            const e2 = parseFloat(document.getElementById('e2_4eq').value);
+            const a3 = parseFloat(document.getElementById('a3_4eq').value);
+            const b3 = parseFloat(document.getElementById('b3_4eq').value);
+            const c3 = parseFloat(document.getElementById('c3_4eq').value);
+            const d3 = parseFloat(document.getElementById('d3_4eq').value);
+            const e3 = parseFloat(document.getElementById('e3_4eq').value);
+            const a4 = parseFloat(document.getElementById('a4_4eq').value);
+            const b4 = parseFloat(document.getElementById('b4_4eq').value);
+            const c4 = parseFloat(document.getElementById('c4_4eq').value);
+            const d4 = parseFloat(document.getElementById('d4_4eq').value);
+            const e4 = parseFloat(document.getElementById('e4_4eq').value);
+            const methodType = document.getElementById('methodType4').value;
+            const solution = document.getElementById('solution-content');
+            
+            if ([a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4].some(isNaN)) {
+                solution.innerHTML = `<div class="step-box">
+                    <h3 class="font-bold text-red-500">Erro:</h3>
+                    <p>Por favor, preencha todos os campos com números válidos.</p>
+                </div>`;
+                return;
+              }
+            
+            let result = '';
+            let finalSolution = null;
+            let solutionType = '';
+            
+            try {
+                solution.innerHTML = '<p class="text-center">Calculando...</p>';
+                
+                if (methodType === 'all' || methodType === 'elimination') {
+                    const elim = solveBy4x4Elimination(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4);
+                    result += elim.steps;
+                    if (!finalSolution && elim.solution) {
+                        finalSolution = elim.solution;
+                        solutionType = 'SPD';
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'cramer') {
+                    const cramer = solveBy4x4Cramer(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4);
+                    result += cramer.steps;
+                    if (!finalSolution && cramer.solution) {
+                        finalSolution = cramer.solution;
+                        solutionType = cramer.type || 'SPD';
+                    }
+                }
+                
+                if (methodType === 'all' || methodType === 'matrix') {
+                    const matrix = solveBy4x4Matrix(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4);
+                    result += matrix.steps;
+                    if (!finalSolution && matrix.solution) {
+                        finalSolution = matrix.solution;
+                        solutionType = matrix.type || 'SPD';
+                    }
+                }
+                
+                if (finalSolution && solutionType === 'SPD') {
+                    result += verifySolution4(a1, b1, c1, d1, e1, a2, b2, c2, d2, e2, a3, b3, c3, d3, e3, a4, b4, c4, d4, e4, 
+                        finalSolution.x, finalSolution.y, finalSolution.z, finalSolution.w);
+                }
+                
+                // Classificação do sistema
+                if (solutionType) {
+                    result += `<div class="method-box">
+                        <h3 class="font-bold text-xl mb-2">Classificação do Sistema</h3>
+                        <div class="step-box">
+                            <p>Tipo de sistema: <strong>${solutionType === 'SPD' ? 'Sistema Possível e Determinado (solução única)' : 
+                                solutionType === 'SPI' ? 'Sistema Possível e Indeterminado (infinitas soluções)' : 
+                                'Sistema Impossível (sem solução)'}</strong></p>
+                        </div>
+                    </div>`;
+                }
+                
+                solution.innerHTML = result;
+            } catch (error) {
+                solution.innerHTML = `<div class="step-box">
+                    <h3 class="font-bold text-red-500">Erro:</h3>
+                    <p>${error.message}</p>
+                </div>`;
+            }
+        });
+        
+        // Navegação entre abas
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remover classe active de todas as abas
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.add('hidden'));
+                
+                // Adicionar classe active à aba selecionada
+                button.classList.add('active');
+                
+                // Mostrar conteúdo da aba selecionada
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.remove('hidden');
+                
+                // Limpar área de solução quando trocar de aba
+                document.getElementById('solution-content').innerHTML = '<p class="text-gray-400">Os resultados serão exibidos após o cálculo.</p>';
+            });
+        });
+    </script>
+</body>
+</html>
