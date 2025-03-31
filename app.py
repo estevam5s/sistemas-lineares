@@ -7573,1665 +7573,912 @@ def show_solver_page():
                     
                     plt.title("Gráfico de Sparsidade dos Coeficientes")
                     st.pyplot(fig)
-
-# Método de Substituição
-def substitution_method(A, b, detailed=True):
-    """Resolve um sistema triangular superior ou inferior usando substituição direta/reversa"""
-    n = len(b)
-    steps = []
-    
-    # Verificar se a matriz é triangular inferior ou superior
-    is_lower = True
-    is_upper = True
-    
-    for i in range(n):
-        for j in range(n):
-            if i < j and abs(A[i, j]) > 1e-10:
-                is_lower = False
-            if i > j and abs(A[i, j]) > 1e-10:
-                is_upper = False
-    
-    if not (is_lower or is_upper):
-        steps.append("O método de substituição só pode ser aplicado a sistemas triangulares.")
-        return steps, None
-    
-    # Solução
-    x = np.zeros(n)
-    
-    if is_lower:  # Triangular inferior - substituição direta
-        if detailed:
-            steps.append("Sistema triangular inferior detectado. Usando substituição direta.")
-        
-        for i in range(n):
-            if abs(A[i, i]) < 1e-10:
-                steps.append(f"Erro: Pivô diagonal A[{i+1},{i+1}] ≈ 0. Sistema pode ser SPI ou SI.")
-                return steps, None
-            
-            # Calcular o termo de substituição
-            sum_term = 0
-            for j in range(i):
-                sum_term += A[i, j] * x[j]
-            
-            # Calcular x[i]
-            x[i] = (b[i] - sum_term) / A[i, i]
-            
-            if detailed:
-                if i > 0:
-                    subst_terms = " - ".join([f"{A[i, j]:.4f}×{x[j]:.4f}" for j in range(i) if abs(A[i, j]) > 1e-10])
-                    steps.append(f"x_{i+1} = ({b[i]:.4f} - {subst_terms}) / {A[i, i]:.4f} = {x[i]:.4f}")
-                else:
-                    steps.append(f"x_{i+1} = {b[i]:.4f} / {A[i, i]:.4f} = {x[i]:.4f}")
-    
-    else:  # Triangular superior - substituição reversa
-        if detailed:
-            steps.append("Sistema triangular superior detectado. Usando substituição reversa.")
-        
-        for i in range(n-1, -1, -1):
-            if abs(A[i, i]) < 1e-10:
-                steps.append(f"Erro: Pivô diagonal A[{i+1},{i+1}] ≈ 0. Sistema pode ser SPI ou SI.")
-                return steps, None
-            
-            # Calcular o termo de substituição
-            sum_term = 0
-            for j in range(i+1, n):
-                sum_term += A[i, j] * x[j]
-            
-            # Calcular x[i]
-            x[i] = (b[i] - sum_term) / A[i, i]
-            
-            if detailed:
-                if i < n-1:
-                    subst_terms = " - ".join([f"{A[i, j]:.4f}×{x[j]:.4f}" for j in range(i+1, n) if abs(A[i, j]) > 1e-10])
-                    steps.append(f"x_{i+1} = ({b[i]:.4f} - {subst_terms}) / {A[i, i]:.4f} = {x[i]:.4f}")
-                else:
-                    steps.append(f"x_{i+1} = {b[i]:.4f} / {A[i, i]:.4f} = {x[i]:.4f}")
-    
-    return steps, x
-
-# Método de Eliminação por Adição
-def elimination_addition_method(A, b, detailed=True):
-    """Implementa o método de eliminação por adição para sistemas lineares"""
-    n = len(b)
-    augmented = np.column_stack((A.copy(), b.copy()))
-    steps = []
-    
-    if detailed:
-        steps.append(f"Matriz aumentada inicial:\n{augmented.copy()}")
-    
-    # Eliminação para frente com adição de equações
-    for i in range(n):
-        # Verificar pivô
-        if abs(augmented[i, i]) < 1e-10:
-            # Tentar trocar linhas para obter um pivô não-nulo
-            pivot_found = False
-            for k in range(i+1, n):
-                if abs(augmented[k, i]) > 1e-10:
-                    augmented[[i, k]] = augmented[[k, i]]
-                    pivot_found = True
-                    if detailed:
-                        steps.append(f"Trocar linha {i+1} com linha {k+1}:\n{augmented.copy()}")
-                    break
-            
-            if not pivot_found:
-                steps.append(f"Coluna {i+1} tem todos os elementos ≈ 0 abaixo da diagonal. O sistema pode ser SPI ou SI.")
-                continue
-        
-        # Zerar os elementos abaixo do pivô usando adição de equações
-        for j in range(i+1, n):
-            if abs(augmented[j, i]) > 1e-10:
-                # Calcular o fator para tornar os coeficientes iguais mas de sinais opostos
-                factor = augmented[j, i] / augmented[i, i]
-                
-                # Multiplicar a equação i por este fator
-                row_i_scaled = factor * augmented[i, :]
-                
-                # Subtrair esta equação da equação j para zerar o elemento
-                augmented[j, :] = augmented[j, :] - row_i_scaled
-                
-                if detailed:
-                    steps.append(f"Linha {j+1} = Linha {j+1} - {factor:.4f} × Linha {i+1}:\n{augmented.copy()}")
-    
-    # Verificar se o sistema é possível
-    for i in range(n):
-        if np.all(abs(augmented[i, :-1]) < 1e-10) and abs(augmented[i, -1]) > 1e-10:
-            steps.append("Sistema impossível (SI): Equação inconsistente detectada (0 = não-zero).")
-            return steps, None
-    
-    # Agora temos uma matriz triangular superior - usar substituição reversa
-    x = np.zeros(n)
-    back_sub_steps = []
-    
-    for i in range(n-1, -1, -1):
-        if abs(augmented[i, i]) < 1e-10:
-            # Se o pivô é aproximadamente zero
-            if abs(augmented[i, -1]) < 1e-10:
-                back_sub_steps.append(f"Linha {i+1} é 0 = 0, sistema possui infinitas soluções (SPI).")
-                return steps + back_sub_steps, None
-            else:
-                back_sub_steps.append(f"Linha {i+1} resulta em 0 = {augmented[i, -1]}, sistema impossível (SI).")
-                return steps + back_sub_steps, None
-        
-        substitution_terms = []
-        for j in range(i+1, n):
-            if abs(augmented[i, j]) > 1e-10:
-                x[i] -= augmented[i, j] * x[j]
-                substitution_terms.append(f"{augmented[i, j]:.4f}×x_{j+1}")
-        
-        x[i] += augmented[i, -1]
-        x[i] /= augmented[i, i]
-        
-        if detailed:
-            if substitution_terms:
-                back_sub_steps.append(f"x_{i+1} = ({augmented[i, -1]:.4f} - ({' + '.join(substitution_terms)})) / {augmented[i, i]:.4f} = {x[i]:.4f}")
-            else:
-                back_sub_steps.append(f"x_{i+1} = {augmented[i, -1]:.4f} / {augmented[i, i]:.4f} = {x[i]:.4f}")
-    
-    steps.extend(back_sub_steps)
-    return steps, x
-
-# Método de Comparação
-def comparison_method(A, b, detailed=True):
-    """Implementa o método de comparação para sistemas 2x2"""
-    if A.shape != (2, 2) or len(b) != 2:
-        steps = ["O método de comparação é aplicável apenas a sistemas 2x2."]
-        return steps, None
-    
-    steps = []
-    
-    # Extrair coeficientes para melhor legibilidade
-    a1, b1 = A[0, 0], A[0, 1]
-    a2, b2 = A[1, 0], A[1, 1]
-    c1, c2 = b[0], b[1]
-    
-    # Verificar se as equações são linearmente independentes
-    det = a1 * b2 - a2 * b1
-    if abs(det) < 1e-10:
-        steps.append("O determinante é aproximadamente zero. As equações são linearmente dependentes.")
-        
-        # Verificar se o sistema é SPI ou SI
-        if abs(a1 * c2 - a2 * c1) < 1e-10:
-            steps.append("Sistema Possível e Indeterminado (SPI): Infinitas soluções.")
-            
-            # Expressar uma variável em termos da outra, se possível
-            if abs(a1) > 1e-10:
-                steps.append(f"Expressando x em termos de y: x = ({c1} - {b1}y) / {a1}")
-            elif abs(b1) > 1e-10:
-                steps.append(f"Expressando y em termos de x: y = ({c1} - {a1}x) / {b1}")
-            
-            return steps, None
-        else:
-            steps.append("Sistema Impossível (SI): Não há solução.")
-            return steps, None
-    
-    # Método de comparação para sistema possível e determinado
-    steps.append("Isolando uma variável em cada equação:")
-    
-    # Isolar x em eq1
-    if abs(a1) > 1e-10:
-        steps.append(f"Da equação 1: {a1}x + {b1}y = {c1}")
-        steps.append(f"x = ({c1} - {b1}y) / {a1}")
-        x_expr = f"({c1} - {b1}y) / {a1}"
-    else:
-        steps.append(f"Da equação 1: {b1}y = {c1}")
-        steps.append(f"y = {c1 / b1}")
-        # Não podemos isolar x, então definir valor de y e usá-lo na equação 2
-        y = c1 / b1
-        x = (c2 - b2 * y) / a2
-        steps.append(f"Substituindo y = {y} na equação 2: {a2}x + {b2}({y}) = {c2}")
-        steps.append(f"x = ({c2} - {b2 * y}) / {a2} = {x}")
-        
-        return steps, np.array([x, y])
-    
-    # Isolar x em eq2
-    if abs(a2) > 1e-10:
-        steps.append(f"Da equação 2: {a2}x + {b2}y = {c2}")
-        steps.append(f"x = ({c2} - {b2}y) / {a2}")
-        
-        # Igualar as expressões para x
-        steps.append("Igualando as expressões para x:")
-        steps.append(f"{x_expr} = ({c2} - {b2}y) / {a2}")
-        
-        # Multiplicar por a1 e a2 para eliminar frações
-        steps.append(f"Multiplicando os dois lados por {a1} e {a2} para eliminar frações:")
-        steps.append(f"{a2}({c1} - {b1}y) = {a1}({c2} - {b2}y)")
-        
-        # Expandir
-        steps.append(f"{a2*c1} - {a2*b1}y = {a1*c2} - {a1*b2}y")
-        
-        # Agrupar termos com y
-        steps.append(f"{a2*c1} - {a1*c2} = {a2*b1}y - {a1*b2}y")
-        steps.append(f"{a2*c1} - {a1*c2} = ({a2*b1} - {a1*b2})y")
-        
-        # Resolver para y
-        y_numerator = a2 * c1 - a1 * c2
-        y_denominator = a2 * b1 - a1 * b2
-        
-        if abs(y_denominator) < 1e-10:
-            steps.append("Erro na divisão: denominador igual a zero. Verifique o sistema.")
-            return steps, None
-        
-        y = y_numerator / y_denominator
-        steps.append(f"y = ({a2*c1} - {a1*c2}) / ({a2*b1} - {a1*b2}) = {y:.4f}")
-        
-        # Calcular x substituindo y na primeira expressão
-        x = (c1 - b1 * y) / a1
-        steps.append(f"Substituindo y = {y:.4f} na expressão para x:")
-        steps.append(f"x = ({c1} - {b1} × {y:.4f}) / {a1} = {x:.4f}")
-        
-        return steps, np.array([x, y])
-    else:
-        steps.append(f"Da equação 2: {b2}y = {c2}")
-        steps.append(f"y = {c2 / b2}")
-        # Não podemos isolar x da eq2, usar valor de y na eq1
-        y = c2 / b2
-        x = (c1 - b1 * y) / a1
-        steps.append(f"Substituindo y = {y} na equação 1: {a1}x + {b1}({y}) = {c1}")
-        steps.append(f"x = ({c1} - {b1 * y}) / {a1} = {x}")
-        
-        return steps, np.array([x, y])
-
-# Método da Fatoração Cholesky
-def cholesky_decomposition(A, b, detailed=True):
-    """Implementa o método da fatoração de Cholesky para sistemas lineares com matriz simétrica definida positiva"""
-    n = len(b)
-    steps = []
-    
-    # Verificar se a matriz é simétrica
-    if not np.allclose(A, A.T):
-        steps.append("A matriz não é simétrica. O método de Cholesky só se aplica a matrizes simétricas.")
-        return steps, None
-    
-    try:
-        # Tentar computar a fatoração de Cholesky
-        L = np.zeros((n, n))
-        
-        if detailed:
-            steps.append("Método da Fatoração de Cholesky (A = LL^T):")
-            steps.append("Calculando a matriz triangular inferior L...")
-        
-        for i in range(n):
-            for j in range(i+1):
-                if i == j:  # Elementos da diagonal
-                    sum_sq = sum(L[i, k] ** 2 for k in range(j))
-                    if A[i, i] - sum_sq <= 0:
-                        steps.append(f"Erro: Termo negativo ou zero sob raiz quadrada. A matriz não é definida positiva.")
-                        return steps, None
                     
-                    L[i, j] = np.sqrt(A[i, i] - sum_sq)
-                    if detailed:
-                        steps.append(f"L[{i+1},{j+1}] = √({A[i, i]} - {sum_sq}) = {L[i, j]:.4f}")
-                else:  # Elementos fora da diagonal
-                    sum_prod = sum(L[i, k] * L[j, k] for k in range(j))
-                    if abs(L[j, j]) < 1e-10:
-                        steps.append(f"Erro: Divisão por zero. L[{j+1},{j+1}] ≈ 0.")
-                        return steps, None
-                    
-                    L[i, j] = (A[i, j] - sum_prod) / L[j, j]
-                    if detailed:
-                        steps.append(f"L[{i+1},{j+1}] = ({A[i, j]} - {sum_prod}) / {L[j, j]:.4f} = {L[i, j]:.4f}")
-        
-        if detailed:
-            steps.append("Matriz L (Cholesky):")
-            steps.append(str(L))
-            steps.append("Agora resolvemos os sistemas triangulares Ly = b e L^Tx = y")
-        
-        # Resolver Ly = b por substituição direta
-        y = np.zeros(n)
-        if detailed:
-            steps.append("Resolver Ly = b por substituição direta:")
-        
-        for i in range(n):
-            sum_term = sum(L[i, j] * y[j] for j in range(i))
-            y[i] = (b[i] - sum_term) / L[i, i]
-            if detailed:
-                steps.append(f"y_{i+1} = ({b[i]} - {sum_term:.4f}) / {L[i, i]:.4f} = {y[i]:.4f}")
-        
-        # Resolver L^Tx = y por substituição reversa
-        x = np.zeros(n)
-        if detailed:
-            steps.append("Resolver L^Tx = y por substituição reversa:")
-        
-        for i in range(n-1, -1, -1):
-            sum_term = sum(L[j, i] * x[j] for j in range(i+1, n))
-            x[i] = (y[i] - sum_term) / L[i, i]
-            if detailed:
-                steps.append(f"x_{i+1} = ({y[i]:.4f} - {sum_term:.4f}) / {L[i, i]:.4f} = {x[i]:.4f}")
-        
-        return steps, x
-    
-    except np.linalg.LinAlgError:
-        steps.append("Erro na fatoração de Cholesky. A matriz pode não ser definida positiva.")
-        return steps, None
-
-# Método de Gauss-Seidel com Relaxação
-def sor_method(A, b, omega=1.5, max_iter=50, tolerance=1e-6, detailed=True):
-    """Implementa o método SOR (Successive Over-Relaxation) para sistemas lineares"""
-    n = len(b)
-    steps = []
-    
-    # Verificar diagonal dominante (condição que favorece convergência)
-    is_diag_dominant = True
-    for i in range(n):
-        if abs(A[i, i]) <= np.sum(np.abs(A[i, :])) - abs(A[i, i]):
-            is_diag_dominant = False
-            break
-    
-    if not is_diag_dominant and detailed:
-        steps.append("Aviso: A matriz não é diagonalmente dominante. O método SOR pode não convergir.")
-    
-    # Verificar se há zeros na diagonal
-    for i in range(n):
-        if abs(A[i, i]) < 1e-10:
-            steps.append(f"Erro: Elemento diagonal A[{i+1},{i+1}] ≈ 0. O método SOR não pode ser aplicado.")
-            return steps, None
-    
-    # Inicializar solução com zeros
-    x = np.zeros(n)
-    
-    if detailed:
-        steps.append(f"Método SOR (ω = {omega}) com max_iter={max_iter}, tolerance={tolerance}:")
-        steps.append("Para cada iteração, calculamos:")
-        steps.append("x_i^(k+1) = (1-ω)x_i^(k) + ω(b_i - Σ(a_ij*x_j^(k+1)) - Σ(a_ij*x_j^(k))) / a_ii")
-        steps.append("          para j < i     para j > i")
-    
-    # Armazenar iterações
-    iterations = []
-    
-    # Processo iterativo
-    for k in range(max_iter):
-        x_old = x.copy()
-        
-        for i in range(n):
-            # Soma dos termos com variáveis já atualizadas
-            sum1 = sum(A[i, j] * x[j] for j in range(i))
-            
-            # Soma dos termos com variáveis ainda não atualizadas
-            sum2 = sum(A[i, j] * x_old[j] for j in range(i+1, n))
-            
-            # Calcular novo valor com relaxação
-            x_new_i = (b[i] - sum1 - sum2) / A[i, i]
-            x[i] = (1 - omega) * x_old[i] + omega * x_new_i
-        
-        # Calcular erro
-        error = np.max(np.abs(x - x_old))
-        iterations.append((k+1, x.copy(), error))
-        
-        # Verificar convergência
-        if error < tolerance:
-            break
-    
-    # Reportar resultado
-    if detailed:
-        for it, x_val, err in iterations:
-            x_str = ", ".join([f"{val:.6f}" for val in x_val])
-            steps.append(f"Iteração {it}: x = [{x_str}], erro = {err:.6e}")
-        
-        if k >= max_iter-1 and error >= tolerance:
-            steps.append(f"Aviso: O método não convergiu dentro de {max_iter} iterações.")
-        else:
-            steps.append(f"O método convergiu após {k+1} iterações com erro = {error:.6e}")
-    
-    return steps, x
-
-# Função para resolver sistemas não-lineares pelo método de Newton
-def newton_nonlinear_system(func, jacobian, x0, max_iter=50, tolerance=1e-6, detailed=True):
-    """
-    Resolve um sistema não-linear usando o método de Newton
-    
-    Parâmetros:
-    - func: função que retorna o vetor F(x)
-    - jacobian: função que retorna a matriz jacobiana de F em x
-    - x0: aproximação inicial
-    - max_iter: número máximo de iterações
-    - tolerance: tolerância para convergência
-    - detailed: se True, retorna passos detalhados
-    
-    Retorna:
-    - steps: passos detalhados
-    - x: solução aproximada ou None se não convergir
-    """
-    steps = []
-    x = np.array(x0, dtype=float)
-    
-    if detailed:
-        steps.append("Método de Newton para Sistemas Não-Lineares")
-        steps.append(f"Aproximação inicial: x0 = {x}")
-    
-    for k in range(max_iter):
-        # Calcular F(x) e J(x)
-        F = func(x)
-        J = jacobian(x)
-        
-        if detailed:
-            steps.append(f"\nIteração {k+1}:")
-            steps.append(f"F(x{k}) = {F}")
-            steps.append(f"J(x{k}) =\n{J}")
-        
-        # Verificar convergência
-        F_norm = np.linalg.norm(F)
-        if F_norm < tolerance:
-            if detailed:
-                steps.append(f"Convergência alcançada! ||F(x{k})|| = {F_norm:.6e} < {tolerance}")
-            break
-        
-        try:
-            # Resolver o sistema linear J(x) * delta = -F(x)
-            delta = np.linalg.solve(J, -F)
-            
-            if detailed:
-                steps.append(f"Resolvendo J(x{k}) * Δx = -F(x{k})")
-                steps.append(f"Δx = {delta}")
-            
-            # Atualizar solução: x_(k+1) = x_k + delta
-            x_new = x + delta
-            
-            if detailed:
-                steps.append(f"x{k+1} = x{k} + Δx = {x_new}")
-            
-            # Verificar convergência pelo passo
-            step_size = np.linalg.norm(delta)
-            if step_size < tolerance:
-                if detailed:
-                    steps.append(f"Convergência alcançada! ||Δx|| = {step_size:.6e} < {tolerance}")
-                break
-            
-            x = x_new
-            
-        except np.linalg.LinAlgError:
-            steps.append("Erro: Matriz jacobiana singular. O método de Newton falhou.")
-            return steps, None
-    
-    if k == max_iter - 1 and F_norm >= tolerance:
-        steps.append(f"Aviso: O método não convergiu após {max_iter} iterações.")
-        return steps, None
-    
-    if detailed:
-        steps.append(f"\nSolução final: x = {x}")
-        steps.append(f"Valor de F(x) na solução: {func(x)}")
-        steps.append(f"Norma de F(x): {np.linalg.norm(func(x)):.6e}")
-    
-    return steps, x
-
-# Exemplo de uso para sistemas não-lineares
-def example_nonlinear_system():
-    """Retorna um exemplo de sistema não-linear com sua função, jacobiano e aproximação inicial"""
-    # Sistema:
-    # f1(x,y) = x^2 + y^2 - 25 = 0
-    # f2(x,y) = x^2 - y^2 - 9 = 0
-    
-    def func(x):
-        return np.array([
-            x[0]**2 + x[1]**2 - 25,
-            x[0]**2 - x[1]**2 - 9
-        ])
-    
-    def jacobian(x):
-        return np.array([
-            [2*x[0], 2*x[1]],
-            [2*x[0], -2*x[1]]
-        ])
-    
-    x0 = [4, 3]  # Aproximação inicial
-    
-    return func, jacobian, x0
-
-# Método dos Gradiantes Bi-Conjugados Estabilizado (BiCGSTAB)
-def bicgstab_method(A, b, max_iter=100, tolerance=1e-6, detailed=True):
-    """
-    Implementa o método dos Gradientes Bi-Conjugados Estabilizado (BiCGSTAB)
-    para resolver sistemas lineares esparsos de grande porte
-    """
-    n = len(b)
-    steps = []
-    
-    # Inicialização
-    x = np.zeros(n)  # Aproximação inicial
-    r = b - np.dot(A, x)  # Resíduo inicial
-    r_tilde = r.copy()  # Vetor arbitrário (escolhido igual a r)
-    
-    # Valores iniciais
-    rho_prev = 1.0
-    alpha = 1.0
-    omega = 1.0
-    v = np.zeros(n)
-    p = np.zeros(n)
-    
-    # Norma do resíduo inicial
-    r_norm_0 = np.linalg.norm(r)
-    
-    if detailed:
-        steps.append("Método BiCGSTAB:")
-        steps.append(f"Resíduo inicial: ||r0|| = {r_norm_0:.6e}")
-    
-    # Iterações
-    iterations = []
-    
-    for k in range(max_iter):
-        # Produto interno r e r_tilde
-        rho = np.dot(r, r_tilde)
-        
-        if abs(rho) < 1e-10:
-            steps.append("Falha no método: rho ≈ 0")
-            return steps, None
-        
-        if k == 0:
-            p = r.copy()
-        else:
-            # Calcular beta
-            beta = (rho / rho_prev) * (alpha / omega)
-            
-            # Atualizar p
-            p = r + beta * (p - omega * v)
-        
-        # Calcular v = A*p
-        v = np.dot(A, p)
-        
-        # Calcular alpha
-        alpha = rho / np.dot(r_tilde, v)
-        
-        # Calcular s = r - alpha*v
-        s = r - alpha * v
-        
-        # Verificar convergência intermediária
-        s_norm = np.linalg.norm(s)
-        if s_norm < tolerance * r_norm_0:
-            x = x + alpha * p
-            r_norm = s_norm
-            iterations.append((k+1, r_norm / r_norm_0))
-            break
-        
-        # Calcular t = A*s
-        t = np.dot(A, s)
-        
-        # Calcular omega
-        omega = np.dot(t, s) / np.dot(t, t)
-        
-        # Atualizar x
-        x = x + alpha * p + omega * s
-        
-        # Atualizar r
-        r_old = r.copy()
-        r = s - omega * t
-        
-        # Verificar convergência
-        r_norm = np.linalg.norm(r)
-        iterations.append((k+1, r_norm / r_norm_0))
-        
-        if r_norm < tolerance * r_norm_0:
-            break
-        
-        # Verificar estagnação
-        if abs(omega) < 1e-10 or np.linalg.norm(r) > 0.9 * np.linalg.norm(r_old):
-            steps.append(f"Estagnação detectada na iteração {k+1}")
-            return steps, None
-        
-        # Atualizar rho_prev para próxima iteração
-        rho_prev = rho
-    
-    # Reportar resultado
-    if detailed:
-        steps.append("Iterações (iteração, resíduo relativo):")
-        for it, rel_residual in iterations:
-            steps.append(f"    {it}: {rel_residual:.6e}")
-            
-        if k >= max_iter-1:
-            steps.append(f"O método não convergiu dentro de {max_iter} iterações.")
-            steps.append(f"Resíduo relativo final: {r_norm/r_norm_0:.6e}")
-        else:
-            steps.append(f"O método convergiu após {k+1} iterações.")
-            steps.append(f"Resíduo relativo final: {r_norm/r_norm_0:.6e}")
-    
-    return steps, x
-
-# Método da Minimização do Resíduo (MINRES)
-def minres_method(A, b, max_iter=100, tolerance=1e-6, detailed=True):
-    """
-    Implementa o método MINRES (Minimal Residual) para resolver sistemas lineares 
-    com matrizes simétricas, possivelmente indefinidas
-    """
-    n = len(b)
-    steps = []
-    
-    # Verificar se a matriz é simétrica
-    if not np.allclose(A, A.T, rtol=1e-5, atol=1e-8):
-        steps.append("Aviso: A matriz não é simétrica. O método MINRES é mais eficiente para matrizes simétricas.")
-    
-    # Inicialização
-    x = np.zeros(n)
-    r = b - np.dot(A, x)
-    v_old = np.zeros(n)
-    v = r / np.linalg.norm(r)
-    beta = np.linalg.norm(r)
-    c_old = 1.0
-    c = 1.0
-    s_old = 0.0
-    s = 0.0
-    w_old = np.zeros(n)
-    w = np.zeros(n)
-    
-    # Norma do resíduo inicial
-    r_norm_0 = np.linalg.norm(r)
-    
-    if detailed:
-        steps.append("Método MINRES:")
-        steps.append(f"Resíduo inicial: ||r0|| = {r_norm_0:.6e}")
-    
-    # Iterações
-    iterations = []
-    
-    for k in range(1, max_iter + 1):
-        # Lanczos process
-        p = np.dot(A, v)
-        alpha = np.dot(v, p)
-        p = p - alpha * v - beta * v_old
-        beta_old = beta
-        beta = np.linalg.norm(p)
-        if beta > 0:
-            v_old = v
-            v = p / beta
-        
-        # Apply previous Givens rotations to the new column of the tridiagonal matrix
-        delta = c_old * alpha - c * s_old * beta_old
-        gamma_bar = s * alpha + c * c_old * beta_old
-        gamma = np.sqrt(delta**2 + beta**2)
-        epsilon = s_old * beta
-        
-        # Compute new Givens rotation
-        c_old = c
-        s_old = s
-        if gamma > 0:
-            c = delta / gamma
-            s = beta / gamma
-        else:
-            c = 1.0
-            s = 0.0
-        
-        # Update solution and work vectors
-        gamma_bar_hat = c * gamma_bar + s * beta
-        z = (beta_old * v_old - gamma_bar * v) / gamma
-        
-        w_old = w
-        w = z
-        
-        x = x + c * beta * w
-        
-        # Compute residual norm (estimativa)
-        r_norm = abs(s * beta) * np.linalg.norm(w)
-        iterations.append((k, r_norm / r_norm_0))
-        
-        if r_norm < tolerance * r_norm_0:
-            break
-    
-    # Verificar convergência
-    r_actual = b - np.dot(A, x)
-    r_norm_actual = np.linalg.norm(r_actual)
-    
-    # Reportar resultado
-    if detailed:
-        steps.append("Iterações (iteração, resíduo relativo estimado):")
-        for it, rel_residual in iterations:
-            steps.append(f"    {it}: {rel_residual:.6e}")
-        
-        steps.append(f"Resíduo relativo real final: {r_norm_actual/r_norm_0:.6e}")
-        
-        if k >= max_iter:
-            steps.append(f"O método não convergiu dentro de {max_iter} iterações.")
-        else:
-            steps.append(f"O método convergiu após {k} iterações.")
-    
-    return steps, x
-
-# Métodos de Integração com UI para Desafios
-
-def circuit_challenge_solver():
-    """Resolver o desafio de circuito elétrico com 5 correntes desconhecidas"""
-    # Definição do sistema
-    A = np.array([
-        [1, -1, -1, 0, 0],    # Nó 1: I1 - I2 - I3 = 0
-        [0, 1, 0, -1, -1],    # Nó 2: I2 - I4 - I5 = 0
-        [10, 0, 0, 0, 5],     # Malha 1: 10*I1 + 5*I5 = 20
-        [0, 5, 0, 15, 0],     # Malha 2: 5*I2 + 15*I4 = 0
-        [0, 0, 8, 0, -5]      # Malha 3: 8*I3 - 5*I5 = 0
-    ])
-    
-    b = np.array([0, 0, 20, 0, 0])
-    
-    # Solução
-    steps, solution = gaussian_elimination_steps(A, b)
-    
-    result = {
-        "A": A,
-        "b": b,
-        "steps": steps,
-        "solution": solution,
-        "explanation": """
-        Este desafio envolve um circuito com 5 correntes desconhecidas (I₁ a I₅).
-        
-        As equações vêm de:
-        - Leis de Kirchhoff para correntes nos nós (equações 1-2)
-        - Leis de Kirchhoff para tensões nas malhas (equações 3-5)
-        
-        A solução representa as correntes em cada ramo do circuito, em amperes.
-        """
-    }
-    
-    return result
-
-def chemical_mixture_solver():
-    """Resolver o desafio de mistura química com 4 componentes"""
-    # Definição do sistema
-    A = np.array([
-        [1, 1, 1, 1],             # Volume total = 100ml
-        [0.1, 0.2, 0.3, 0.4],     # Concentração de composto X
-        [0.2, 0.1, 0.4, 0.3],     # Concentração de composto Y
-        [0.3, 0.4, 0.1, 0.2]      # Concentração de composto Z
-    ])
-    
-    b = np.array([100, 25, 25, 25])
-    
-    # Solução
-    steps, solution = gaussian_elimination_steps(A, b)
-    
-    result = {
-        "A": A,
-        "b": b,
-        "steps": steps,
-        "solution": solution,
-        "explanation": """
-        Este desafio envolve encontrar as quantidades exatas de 4 componentes químicos para uma mistura.
-        
-        As equações representam:
-        - Volume total da mistura (100ml)
-        - Quantidade do composto X na mistura final (25%)
-        - Quantidade do composto Y na mistura final (25%)
-        - Quantidade do composto Z na mistura final (25%)
-        
-        A solução representa o volume em ml de cada componente na mistura final.
-        """
-    }
-    
-    return result
-
-def balance_reaction_solver():
-    """Resolver o desafio de balanceamento de reação química complexa"""
-    # Definição do sistema para balancear C₃H₈ + O₂ → CO₂ + H₂O
-    A = np.array([
-        [3, 0, -1, 0],    # Balanço de C: 3 de C₃H₈, -1 de CO₂
-        [8, 0, 0, -2],    # Balanço de H: 8 de C₃H₈, -2 de H₂O
-        [0, 2, -2, -1]    # Balanço de O: 2 de O₂, -2 de CO₂, -1 de H₂O
-    ])
-    
-    b = np.array([0, 0, 0])
-    
-    # Para sistemas homogêneos, aplicamos uma restrição adicional para obter a solução mais simples
-    # Isso é feito encontrando o espaço nulo e então normalizando
-    
-    # Encontrar espaço nulo (solução para sistema homogêneo)
-    null_space = np.linalg.lstsq(A, b, rcond=None)[0]
-    
-    # Simplex method é usado para encontrar coeficientes inteiros mais simples
-    # Simulação do resultado
-    coefs = np.array([1, 5, 3, 4])  # C₃H₈ + 5O₂ → 3CO₂ + 4H₂O
-    
-    result = {
-        "A": A,
-        "b": b,
-        "coefficients": coefs,
-        "equation": "C₃H₈ + 5O₂ → 3CO₂ + 4H₂O",
-        "explanation": """
-        Este desafio envolve balancear a reação química: C₃H₈ + O₂ → CO₂ + H₂O (propano + oxigênio → dióxido de carbono + água)
-        
-        Para balancear reações químicas, estabelecemos equações lineares para cada elemento:
-        - Carbono (C): 3a = c
-        - Hidrogênio (H): 8a = 2d
-        - Oxigênio (O): 2b = 2c + d
-        
-        Onde a, b, c e d são os coeficientes de C₃H₈, O₂, CO₂ e H₂O, respectivamente.
-        
-        A solução mais simples com números inteiros é: a=1, b=5, c=3, d=4
-        Ou seja: C₃H₈ + 5O₂ → 3CO₂ + 4H₂O
-        
-        Verificação:
-        - Carbono: 3(1) = 3(1) ✓
-        - Hidrogênio: 8(1) = 2(4) ✓
-        - Oxigênio: 2(5) = 2(3) + 1(4) → 10 = 6 + 4 = 10 ✓
-        """
-    }
-    
-    return result
-
-def ill_conditioned_solver():
-    """Resolver o desafio de sistema mal condicionado"""
-    # Definição do sistema mal condicionado
-    A = np.array([
-        [1.000, 0.990, 0.990, 0.990],
-        [0.990, 1.000, 0.990, 0.990],
-        [0.990, 0.990, 1.000, 0.990],
-        [0.990, 0.990, 0.990, 1.000]
-    ])
-    
-    b = np.array([4.0, 4.0, 4.0, 4.0])
-    
-    # Calcular o número de condição
-    cond_number = np.linalg.cond(A)
-    
-    # Solução pelo método padrão (para comparação)
-    solution_standard = np.linalg.solve(A, b)
-    
-    # Solução com maior precisão usando decomposição SVD
-    U, s, Vt = np.linalg.svd(A)
-    s_inv = np.array([1/x if x > 1e-10 else 0 for x in s])
-    S_inv = np.zeros((4, 4))
-    S_inv[:4, :4] = np.diag(s_inv)
-    solution_svd = Vt.T @ (S_inv @ (U.T @ b))
-    
-    # Solução usando regularização de Tikhonov
-    lambda_reg = 1e-3
-    A_reg = A.T @ A + lambda_reg * np.eye(4)
-    b_reg = A.T @ b
-    solution_tikhonov = np.linalg.solve(A_reg, b_reg)
-    
-    result = {
-        "A": A,
-        "b": b,
-        "condition_number": cond_number,
-        "solution_standard": solution_standard,
-        "solution_svd": solution_svd,
-        "solution_tikhonov": solution_tikhonov,
-        "explanation": f"""
-        Este desafio envolve um sistema linearmente independente, mas numericamente instável.
-        
-        O número de condição da matriz é {cond_number:.1e}, o que indica que a matriz é mal condicionada.
-        Um número de condição alto significa que pequenas perturbações nos dados podem causar grandes mudanças na solução.
-        
-        Foram utilizadas três abordagens para resolver o sistema:
-        1. Método padrão (eliminação gaussiana): Sensível a erros numéricos
-        2. Decomposição SVD: Mais estável para sistemas mal condicionados
-        3. Regularização de Tikhonov: Estabiliza a solução penalizando valores extremos
-        
-        A verdadeira solução para este sistema é x = y = z = w = 1, mas devido ao mal condicionamento,
-        pequenos erros de arredondamento podem levar a resultados significativamente diferentes.
-        """
-    }
-    
-    return result
-
-def traffic_analysis_solver():
-    """Resolver o desafio de análise de tráfego em uma rede com 6 nós"""
-    # Matriz de incidência para uma rede com 6 nós e 10 arcos
-    A = np.array([
-        [ 1,  1,  0,  0,  0,  0, -1,  0,  0,  0],  # Fluxo no nó 1
-        [-1,  0,  1,  1,  0,  0,  0, -1,  0,  0],  # Fluxo no nó 2
-        [ 0, -1, -1,  0,  1,  0,  0,  0, -1,  0],  # Fluxo no nó 3
-        [ 0,  0,  0, -1, -1,  1,  0,  0,  0, -1],  # Fluxo no nó 4
-        [ 0,  0,  0,  0,  0, -1,  1,  1,  0,  0],  # Fluxo no nó 5
-        [ 0,  0,  0,  0,  0,  0,  0,  0,  1,  1]   # Fluxo no nó 6
-    ])
-    
-    # Demanda/suprimento em cada nó
-    b = np.array([150, 0, 0, 0, -50, -100])
-    
-    # Capacidades dos arcos
-    capacities = np.array([80, 70, 50, 60, 40, 30, 60, 90, 70, 80])
-    
-    # Custos de fluxo em cada arco
-    costs = np.array([4, 3, 2, 5, 3, 2, 6, 4, 5, 3])
-    
-    # A solução é do tipo min-cost flow (fluxo de custo mínimo)
-    # Em um problema real, isso seria resolvido usando um algoritmo específico
-    # Aqui vamos simular uma solução "ótima"
-    flows = np.array([60, 90, 30, 60, 40, 30, 20, 70, 40, 60])
-    
-    result = {
-        "A": A,
-        "b": b,
-        "capacities": capacities,
-        "costs": costs,
-        "flows": flows,
-        "total_cost": np.sum(costs * flows),
-        "explanation": """
-        Este desafio envolve um problema de fluxo de custo mínimo em uma rede com 6 nós e 10 arcos.
-        
-        As equações representam:
-        - Conservação de fluxo em cada nó (lei de Kirchhoff para fluxos)
-        - Restrições de capacidade em cada arco
-        - Minimização do custo total
-        
-        A solução mostra o fluxo ótimo em cada arco que satisfaz:
-        - As demandas/suprimentos em cada nó
-        - As restrições de capacidade
-        - Minimiza o custo total do fluxo
-        
-        O valor de b representa a demanda (negativa) ou suprimento (positiva) em cada nó.
-        No exemplo, o nó 1 tem um suprimento de 150 unidades, o nó 5 tem uma demanda de 50 unidades
-        e o nó 6 tem uma demanda de 100 unidades.
-        """
-    }
-    
-    return result
-
-# Adicione este código à seção de importações no topo do arquivo
-from new_methods import (
-    substitution_method, elimination_addition_method, comparison_method,
-    cholesky_decomposition, sor_method, bicgstab_method, minres_method,
-    newton_nonlinear_system, example_nonlinear_system,
-    circuit_challenge_solver, chemical_mixture_solver, balance_reaction_solver,
-    ill_conditioned_solver, traffic_analysis_solver
-)
-
-# Atualização da função show_solver_page() para incluir os novos métodos
-def show_solver_page():
-    st.markdown('<h1 class="main-header">Resolver Sistema Linear</h1>', unsafe_allow_html=True)
-    
-    tab1, tab2, tab3 = st.tabs(["📝 Inserir Sistema", "🔍 Resultados", "📊 Visualização"])
-    
-    with tab1:
-        st.markdown('<h2 class="sub-header">Insira seu sistema de equações lineares</h2>', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            system_input_method = st.radio(
-                "Método de entrada:",
-                ["Manual (Coeficientes)", "Equações (Texto)", "Matriz Aumentada"],
-                horizontal=True
-            )
-            
-        with col2:
-            vars_count = st.number_input("Número de variáveis:", min_value=2, max_value=6, value=2)
-            
-        # Resto do código de entrada do sistema...
-        # ...
-        
-        # Método de resolução (atualizado)
-        st.markdown("### Método de Resolução")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            solution_method = st.selectbox(
-                "Escolha o método:",
-                ["Eliminação de Gauss", "Gauss-Jordan", "Regra de Cramer", "Matriz Inversa", 
-                 "Decomposição LU", "Jacobi", "Gauss-Seidel", 
-                 # Métodos adicionais
-                 "Substituição", "Eliminação por Adição", "Comparação", 
-                 "Fatoração de Cholesky", "SOR (Relaxação)", "BiCGSTAB",
-                 "MINRES", "Newton (Não-Linear)", "Todos os Métodos"]
-            )
-            
-        with col2:
-            show_steps = st.checkbox("Mostrar passos detalhados", value=True)
-        
-        # Opções extras para métodos iterativos
-        if solution_method in ["Jacobi", "Gauss-Seidel", "SOR (Relaxação)", "BiCGSTAB", "MINRES"]:
-            col1, col2 = st.columns(2)
-            with col1:
-                max_iter = st.number_input("Número máximo de iterações:", min_value=5, max_value=1000, value=50)
-            with col2:
-                tolerance = st.number_input("Tolerância:", min_value=1e-10, max_value=1e-2, value=1e-6, format="%.1e")
-            
-            # Parâmetro específico para SOR
-            if solution_method == "SOR (Relaxação)":
-                omega = st.slider("Fator de relaxação (ω):", min_value=0.1, max_value=2.0, value=1.5, step=0.1)
-            else:
-                omega = 1.5
-        else:
-            max_iter = 50
-            tolerance = 1e-6
-            omega = 1.5
-        
-        # Verificar se é sistema não-linear
-        is_nonlinear = solution_method == "Newton (Não-Linear)"
-        if is_nonlinear:
-            st.markdown("### Sistema Não-Linear")
-            
-            nonlinear_system_type = st.selectbox(
-                "Tipo de sistema não-linear:",
-                ["Exemplo Pré-definido", "Personalizado"]
-            )
-            
-            if nonlinear_system_type == "Exemplo Pré-definido":
-                st.markdown("""
-                Sistema não-linear pré-definido:
-                ```
-                f₁(x,y) = x² + y² - 25 = 0
-                f₂(x,y) = x² - y² - 9 = 0
-                ```
-                """)
-                
-                x0 = st.text_input("Aproximação inicial (separada por vírgulas):", value="4, 3")
-                try:
-                    x0 = [float(x.strip()) for x in x0.split(',')]
-                except:
-                    st.error("Erro no formato da aproximação inicial. Use valores separados por vírgulas.")
-                    x0 = [4, 3]
-                
-            else:
-                st.warning("A definição de sistemas não-lineares personalizados será implementada em uma versão futura.")
-                x0 = [4, 3]
-        
-        A, b = create_system_matrix(coeffs, constants, vars_count)
-        
-        # Botão para resolver
-        if st.button("Resolver Sistema", type="primary", key="solve_btn"):
-            st.session_state["solver_show_steps"] = show_steps
-            st.session_state.system_solved = True
-            st.session_state.A = A
-            st.session_state.b = b
-            st.session_state.vars_count = vars_count
-            st.session_state.solution_method = solution_method
-            st.session_state.max_iter = max_iter
-            st.session_state.tolerance = tolerance
-            st.session_state.omega = omega
-            st.session_state.system_classification = classify_system(A, b)
-            
-            if is_nonlinear:
-                st.session_state.is_nonlinear = True
-                st.session_state.x0 = x0
-            else:
-                st.session_state.is_nonlinear = False
-            
-            # Computar soluções pelos diferentes métodos
-            results = {}
-            
-            # Agrupar métodos
-            if solution_method in ["Eliminação de Gauss", "Todos os Métodos"]:
-                steps, solution = gaussian_elimination_steps(A, b)
-                results["Eliminação de Gauss"] = {"steps": steps, "solution": solution}
-                
-            if solution_method in ["Gauss-Jordan", "Todos os Métodos"]:
-                steps, solution = gauss_jordan_steps(A, b)
-                results["Gauss-Jordan"] = {"steps": steps, "solution": solution}
-            
-            # Métodos adicionais
-            if solution_method in ["Substituição", "Todos os Métodos"]:
-                steps, solution = substitution_method(A, b, detailed=show_steps)
-                results["Substituição"] = {"steps": steps, "solution": solution}
-                
-            if solution_method in ["Eliminação por Adição", "Todos os Métodos"]:
-                steps, solution = elimination_addition_method(A, b, detailed=show_steps)
-                results["Eliminação por Adição"] = {"steps": steps, "solution": solution}
-            
-            if solution_method in ["Comparação", "Todos os Métodos"] and A.shape == (2, 2):
-                steps, solution = comparison_method(A, b, detailed=show_steps)
-                results["Comparação"] = {"steps": steps, "solution": solution}
-            
-            if solution_method in ["Fatoração de Cholesky", "Todos os Métodos"]:
-                steps, solution = cholesky_decomposition(A, b, detailed=show_steps)
-                results["Fatoração de Cholesky"] = {"steps": steps, "solution": solution}
-                
-            if solution_method in ["SOR (Relaxação)", "Todos os Métodos"]:
-                steps, solution = sor_method(A, b, omega=omega, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
-                results["SOR (Relaxação)"] = {"steps": steps, "solution": solution}
-                
-            if solution_method in ["BiCGSTAB", "Todos os Métodos"]:
-                steps, solution = bicgstab_method(A, b, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
-                results["BiCGSTAB"] = {"steps": steps, "solution": solution}
-                
-            if solution_method in ["MINRES", "Todos os Métodos"]:
-                steps, solution = minres_method(A, b, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
-                results["MINRES"] = {"steps": steps, "solution": solution}
-                
-            # Métodos para sistemas quadrados (nxn)
-            if A.shape[0] == A.shape[1]:  # Apenas para sistemas quadrados
-                if solution_method in ["Regra de Cramer", "Todos os Métodos"] and vars_count <= 4:
-                    steps, solution = cramer_rule(A, b, detailed=show_steps)
-                    results["Regra de Cramer"] = {"steps": steps, "solution": solution}
-                
-                if solution_method in ["Matriz Inversa", "Todos os Métodos"]:
-                    steps, solution = matrix_inverse_method(A, b, detailed=show_steps)
-                    results["Matriz Inversa"] = {"steps": steps, "solution": solution}
-                    
-                if solution_method in ["Decomposição LU", "Todos os Métodos"]:
-                    steps, solution = lu_decomposition_method(A, b, detailed=show_steps)
-                    results["Decomposição LU"] = {"steps": steps, "solution": solution}
-            
-            # Métodos iterativos clássicos
-            if solution_method in ["Jacobi", "Todos os Métodos"]:
-                steps, solution = jacobi_iteration_method(A, b, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
-                results["Jacobi"] = {"steps": steps, "solution": solution}
-                
-            if solution_method in ["Gauss-Seidel", "Todos os Métodos"]:
-                steps, solution = gauss_seidel_method(A, b, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
-                results["Gauss-Seidel"] = {"steps": steps, "solution": solution}
-            
-            # Sistema não-linear
-            if is_nonlinear:
-                func, jacobian, _ = example_nonlinear_system()
-                steps, solution = newton_nonlinear_system(func, jacobian, x0, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
-                results["Newton (Não-Linear)"] = {"steps": steps, "solution": solution}
-            
-            st.session_state.results = results
-            
-            # Atualizar progresso do usuário
-            st.session_state.user_progress["exercises_completed"] += 1
-            
-            # Mudar para a aba de resultados
-            st.experimental_rerun()
-
-# Atualização para a função show_exercises_page() para incluir os desafios
-def handle_challenges(tab2):
-    with tab2:
-        st.markdown('<h2 class="sub-header">Desafios Semanais</h2>', unsafe_allow_html=True)
-        
-        # Lista de desafios
-        if "current_challenge" not in st.session_state:
-            st.session_state.current_challenge = None
-        
-        challenges = [
-            {
-                "id": "circuit",
-                "title": "Circuitos Elétricos",
-                "description": "Resolva um sistema de equações que modela um circuito com 5 correntes desconhecidas.",
-                "difficulty": "Difícil",
-                "points": 100,
-                "deadline": "25/03/2025",
-                "status": "Disponível",
-                "solver": circuit_challenge_solver
-            }
-        ]
-        
-        # Interface para desafios
-        if st.session_state.current_challenge is None:
-            # Mostrar lista de desafios disponíveis
-            st.markdown("### Desafios Disponíveis")
-            
-            for challenge in challenges:
-                col1, col2 = st.columns([3, 1])
-                
-                with col1:
-                    st.markdown(f"""
-                    <div style="background-color: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #1E88E5;">
-                        <h4 style="margin-top: 0;">{challenge["title"]} <span style="background-color: #e3f2fd; color: #1E88E5; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem; float: right;">{challenge["difficulty"]} • {challenge["points"]} pontos</span></h4>
-                        <p>{challenge["description"]}</p>
-                        <p style="color: #666; font-size: 0.9rem;">Prazo: {challenge["deadline"]}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    if st.button("Iniciar Desafio", key=f"start_{challenge['id']}"):
-                        st.session_state.current_challenge = challenge["id"]
-                        st.experimental_rerun()
-            
-            # Ranking
-            st.markdown("### Ranking dos Desafios")
-            
-            ranking_data = [
-                {"Posição": 1, "Usuário": "MatematicaMaster", "Pontos": 425, "Desafios": 4},
-                {"Posição": 2, "Usuário": "AlgebraFã", "Pontos": 350, "Desafios": 3},
-                {"Posição": 3, "Usuário": "SistemasGuru", "Pontos": 275, "Desafios": 3},
-                {"Posição": 4, "Usuário": "Estudante (você)", "Pontos": 150, "Desafios": 2},
-                {"Posição": 5, "Usuário": "MatrizInversa", "Pontos": 125, "Desafios": 1},
-            ]
-            
-            st.dataframe(
-                pd.DataFrame(ranking_data),
-                use_container_width=True,
-                hide_index=True
-            )
-        
-        else:
-            # Mostrar desafio selecionado
-            challenge_id = st.session_state.current_challenge
-            
-            # Encontrar o desafio correspondente
-            current_challenge = next((c for c in challenges if c["id"] == challenge_id), None)
-            
-            if current_challenge:
-                st.markdown(f"## Desafio: {current_challenge['title']}")
-                st.markdown(f"**{current_challenge['description']}**")
-                
-                # Botão para voltar à lista de desafios
-                if st.button("← Voltar aos Desafios"):
-                    st.session_state.current_challenge = None
-                    st.experimental_rerun()
-                
-                # Obter dados do desafio usando a função solver
-                challenge_data = current_challenge["solver"]()
-                
-                # Mostrar detalhes do desafio
-                st.markdown("### Detalhes do Desafio")
-                st.markdown(challenge_data["explanation"])
-                
-                # Mostrar o sistema a ser resolvido
-                st.markdown("### Sistema Linear")
-                
-                if "A" in challenge_data and "b" in challenge_data:
-                    A = challenge_data["A"]
-                    b = challenge_data["b"]
-                    
-                    # Formatar e mostrar equações
-                    if challenge_id != "reaction":  # Para reações químicas, mostrar equação balanceada
-                        var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]]
-                        
-                        # Se o desafio tiver nomes de variáveis personalizados, usá-los
-                        if "vars" in challenge_data:
-                            var_names = challenge_data["vars"]
-                        
-                        for i in range(min(len(b), A.shape[0])):
-                            eq_str = format_equation(A[i], var_names[:A.shape[1]], b[i])
-                            st.write(f"Equação {i+1}: {eq_str}")
-                    else:
-                        st.markdown(f"**Equação química:**")
-                        st.markdown(f"### {challenge_data['equation']}")
-                
-                # Interface de solução diferente dependendo do tipo de desafio
-                if challenge_id == "reaction":
-                    st.markdown("### Balanceamento da Reação")
-                    st.markdown("Coeficientes estequiométricos balanceados:")
-                    st.markdown(challenge_data["equation"])
-                    
-                    st.markdown("### Verificação")
-                    st.markdown("""
-                    - Carbono (C): 3(1) = 3(1) ✓
-                    - Hidrogênio (H): 8(1) = 2(4) ✓
-                    - Oxigênio (O): 2(5) = 2(3) + 1(4) → 10 = 6 + 4 = 10 ✓
-                    """)
-                    
-                elif challenge_id == "ill_conditioned":
-                    st.markdown("### Análise de Condicionamento")
-                    st.markdown(f"**Número de condição:** {challenge_data['condition_number']:.2e}")
-                    
-                    st.markdown("### Soluções por Diferentes Métodos")
-                    
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.markdown("**Método Padrão:**")
-                        solution_standard = challenge_data["solution_standard"]
-                        for i, val in enumerate(solution_standard):
-                            st.markdown(f"x_{i+1} = {val:.10f}")
-                    
-                    with col2:
-                        st.markdown("**Método SVD (mais estável):**")
-                        solution_svd = challenge_data["solution_svd"]
-                        for i, val in enumerate(solution_svd):
-                            st.markdown(f"x_{i+1} = {val:.10f}")
-                    
-                    st.markdown("**Método com Regularização Tikhonov:**")
-                    solution_tikhonov = challenge_data["solution_tikhonov"]
-                    for i, val in enumerate(solution_tikhonov):
-                        st.markdown(f"x_{i+1} = {val:.10f}")
-                    
-                    st.markdown("### Solução Exata (Referência)")
-                    st.markdown("x₁ = x₂ = x₃ = x₄ = 1.0")
-                    
-                elif challenge_id == "traffic":
-                    st.markdown("### Fluxo de Custo Mínimo")
-                    
-                    flows = challenge_data["flows"]
-                    costs = challenge_data["costs"]
-                    capacities = challenge_data["capacities"]
-                    
-                    flow_data = []
-                    for i in range(len(flows)):
-                        flow_data.append({
-                            "Arco": f"Arco {i+1}",
-                            "Fluxo": flows[i],
-                            "Capacidade": capacities[i],
-                            "Custo Unitário": costs[i],
-                            "Custo Total": flows[i] * costs[i]
-                        })
-                    
-                    st.dataframe(pd.DataFrame(flow_data))
-                    
-                    st.markdown(f"**Custo Total:** {challenge_data['total_cost']} unidades")
-                    
-                    # Visualização de rede (simplificada)
-                    st.markdown("### Visualização da Rede")
-                    st.image("https://i.imgur.com/TXJEoSe.png", caption="Visualização Esquemática da Rede de Fluxo")
-                    
-                else:
-                    # Para outros desafios
-                    st.markdown("### Solução")
-                    
-                    if "solution" in challenge_data:
-                        solution = challenge_data["solution"]
-                        
-                        var_names = ["x", "y", "z", "w", "v", "u"][:len(solution)]
-                        if "vars" in challenge_data:
-                            var_names = challenge_data["vars"][:len(solution)]
-                        
-                        for i, var in enumerate(var_names):
-                            st.markdown(f"**{var}** = {solution[i]:.4f}")
-                    
-                    # Mostrar passos detalhados
-                    if "steps" in challenge_data:
-                        with st.expander("Ver Passos Detalhados", expanded=False):
-                            for step in challenge_data["steps"]:
-                                st.write(step)
-                
-                # Botão para submeter solução
-                st.markdown("### Sua Solução")
-                if st.button("Enviar Solução", type="primary"):
-                    # Simular submissão bem-sucedida
-                    st.success(f"Parabéns! Você completou o desafio '{current_challenge['title']}' e ganhou {current_challenge['points']} pontos!")
-                    
-                    # Atualizar pontuação (simulado)
-                    st.session_state.user_progress["challenges_completed"] = st.session_state.user_progress.get("challenges_completed", 0) + 1
-                    st.session_state.user_progress["challenge_points"] = st.session_state.user_progress.get("challenge_points", 0) + current_challenge["points"]
-                    
-                    # Botão para voltar aos desafios
-                    if st.button("Continuar", key="continue_btn"):
-                        st.session_state.current_challenge = None
-                        st.experimental_rerun(),
-            {
-                "id": "chemical",
-                "title": "Mistura Química",
-                "description": "Encontre as quantidades exatas para uma mistura química com 4 componentes.",
-                "difficulty": "Médio",
-                "points": 75,
-                "deadline": "27/03/2025",
-                "status": "Disponível",
-                "solver": chemical_mixture_solver
-            },
-            {
-                "id": "reaction",
-                "title": "Balanceamento de Reações",
-                "description": "Use sistemas lineares para balancear uma reação química complexa.",
-                "difficulty": "Médio",
-                "points": 50,
-                "deadline": "30/03/2025",
-                "status": "Disponível",
-                "solver": balance_reaction_solver
-            },
-            {
-                "id": "ill_conditioned",
-                "title": "Sistema Mal Condicionado",
-                "description": "Resolva um sistema linearmente independente, mas numericamente instável.",
-                "difficulty": "Difícil",
-                "points": 125,
-                "deadline": "01/04/2025",
-                "status": "Disponível",
-                "solver": ill_conditioned_solver
-            },
-            {
-                "id": "traffic",
-                "title": "Análise de Tráfego",
-                "description": "Modele e resolva um problema de fluxo de tráfego em uma rede com 6 nós.",
-                "difficulty": "Difícil",
-                "points": 150,
-                "deadline": "05/04/2025",
-                "status": "Disponível",
-                "solver": traffic_analysis_solver
-            }
-
-# Modifique a função original show_exercises_page() para incluir o manipulador de desafios
 def show_exercises_page():
     st.markdown('<h1 class="main-header">Exercícios de Sistemas Lineares</h1>', unsafe_allow_html=True)
     
     tab1, tab2, tab3, tab4 = st.tabs(["📝 Praticar", "🏆 Desafios", "📋 Histórico", "📊 Progresso"])
     
     with tab1:
-        # Código original para a aba de prática
-        # ...
-        pass
-    
-    # Usar o manipulador de desafios para a aba de desafios
-    handle_challenges(tab2)
-    
-    with tab3:
-        # Código original para a aba de histórico
-        # ...
-        pass
-    
-    with tab4:
-        # Código original para a aba de progresso
-        # ...
-        pass
-
-# Suporte para sistemas não-lineares personalizados
-
-def create_nonlinear_system_ui():
-    st.markdown("### Sistema Não-Linear Personalizado")
-    
-    st.markdown("""
-    Insira as funções do seu sistema não-linear. Para sistemas com 2 variáveis, use `x` e `y`. 
-    Para sistemas com 3 variáveis, use `x`, `y` e `z`.
-    
-    **Exemplo**: 
-    Para o sistema
-    ```
-    x² + y² - 25 = 0
-    x² - y² - 9 = 0
-    ```
-    
-    Insira as funções como:
-    ```
-    x**2 + y**2 - 25
-    x**2 - y**2 - 9
-    ```
-    """)
-    
-    # Seleção do número de variáveis
-    vars_count = st.radio("Número de variáveis:", [2, 3], horizontal=True)
-    
-    # Campos para as funções
-    functions = []
-    for i in range(vars_count):
-        func = st.text_input(f"Função {i+1}:", 
-                           placeholder=f"Exemplo: x**2 + y**2 - {i+1}",
-                           key=f"func_{i}")
-        functions.append(func)
-    
-    # Aproximação inicial
-    st.markdown("### Aproximação Inicial")
-    
-    col1, col2 = st.columns(2)
-    
-    if vars_count == 2:
-        with col1:
-            x0 = st.number_input("x₀:", value=1.0)
-        with col2:
-            y0 = st.number_input("y₀:", value=1.0)
-        initial_guess = [x0, y0]
-    else:  # vars_count == 3
-        with col1:
-            x0 = st.number_input("x₀:", value=1.0)
-            z0 = st.number_input("z₀:", value=1.0)
-        with col2:
-            y0 = st.number_input("y₀:", value=1.0)
-        initial_guess = [x0, y0, z0]
-    
-    # Verificar se as funções são válidas
-    valid_funcs = True
-    if all(functions):
-        try:
-            # Teste de avaliação das funções
-            if vars_count == 2:
-                x, y = 1.0, 1.0
-                for func in functions:
-                    eval(func)
-            else:
-                x, y, z = 1.0, 1.0, 1.0
-                for func in functions:
-                    eval(func)
-        except Exception as e:
-            st.error(f"Erro nas funções: {str(e)}")
-            valid_funcs = False
-    else:
-        valid_funcs = False
-    
-    # Criar funções para o método de Newton
-    if valid_funcs:
-        # Função para avaliar o sistema
-        if vars_count == 2:
-            def func(X):
-                x, y = X
-                return np.array([eval(f) for f in functions])
-            
-            # Aproximação do jacobiano por diferenças finitas
-            def jacobian(X):
-                x, y = X
-                eps = 1e-6
-                J = np.zeros((vars_count, vars_count))
-                
-                for i in range(vars_count):
-                    # Derivada parcial em relação a x
-                    x_plus = X.copy()
-                    x_plus[0] += eps
-                    x_minus = X.copy()
-                    x_minus[0] -= eps
-                    J[i, 0] = (eval(functions[i], {"x": x_plus[0], "y": x_plus[1]}) - 
-                              eval(functions[i], {"x": x_minus[0], "y": x_minus[1]})) / (2*eps)
-                    
-                    # Derivada parcial em relação a y
-                    y_plus = X.copy()
-                    y_plus[1] += eps
-                    y_minus = X.copy()
-                    y_minus[1] -= eps
-                    J[i, 1] = (eval(functions[i], {"x": y_plus[0], "y": y_plus[1]}) - 
-                              eval(functions[i], {"x": y_minus[0], "y": y_minus[1]})) / (2*eps)
-                
-                return J
-        else:  # vars_count == 3
-            def func(X):
-                x, y, z = X
-                return np.array([eval(f) for f in functions])
-            
-            # Aproximação do jacobiano por diferenças finitas
-            def jacobian(X):
-                x, y, z = X
-                eps = 1e-6
-                J = np.zeros((vars_count, vars_count))
-                
-                for i in range(vars_count):
-                    # Derivada parcial em relação a x
-                    x_plus = X.copy()
-                    x_plus[0] += eps
-                    x_minus = X.copy()
-                    x_minus[0] -= eps
-                    J[i, 0] = (eval(functions[i], {"x": x_plus[0], "y": x_plus[1], "z": x_plus[2]}) - 
-                              eval(functions[i], {"x": x_minus[0], "y": x_minus[1], "z": x_minus[2]})) / (2*eps)
-                    
-                    # Derivada parcial em relação a y
-                    y_plus = X.copy()
-                    y_plus[1] += eps
-                    y_minus = X.copy()
-                    y_minus[1] -= eps
-                    J[i, 1] = (eval(functions[i], {"x": y_plus[0], "y": y_plus[1], "z": y_plus[2]}) - 
-                              eval(functions[i], {"x": y_minus[0], "y": y_minus[1], "z": y_minus[2]})) / (2*eps)
-                    
-                    # Derivada parcial em relação a z
-                    z_plus = X.copy()
-                    z_plus[2] += eps
-                    z_minus = X.copy()
-                    z_minus[2] -= eps
-                    J[i, 2] = (eval(functions[i], {"x": z_plus[0], "y": z_plus[1], "z": z_plus[2]}) - 
-                              eval(functions[i], {"x": z_minus[0], "y": z_minus[1], "z": z_minus[2]})) / (2*eps)
-                
-                return J
+        st.markdown('<h2 class="sub-header">Pratique seus conhecimentos</h2>', unsafe_allow_html=True)
         
-        # Opções para o método de Newton
-        col1, col2 = st.columns(2)
-        with col1:
-            max_iter = st.number_input("Número máximo de iterações:", min_value=5, max_value=100, value=20)
-        with col2:
-            tolerance = st.number_input("Tolerância:", min_value=1e-10, max_value=1e-2, value=1e-6, format="%.1e")
+        # Configurações do exercício
+        col1, col2, col3 = st.columns(3)
         
-        # Botão para resolver
-        if st.button("Resolver Sistema Não-Linear", type="primary"):
+        with col1:
+            difficulty = st.select_slider(
+                "Nível de dificuldade:",
+                options=["Fácil", "Médio", "Difícil"],
+                value="Médio"
+            )
+            
+        with col2:
+            exercise_topics = [
+                "Geral",
+                "Sistemas 2x2",
+                "Sistemas 3x3",
+                "Sistemas 4x4",
+                "Sistemas SPI",
+                "Sistemas SI",
+                "Métodos Iterativos",
+                "Mal Condicionados",
+                "Aplicações"
+            ]
+            
+            topic = st.selectbox(
+                "Tópico:",
+                exercise_topics,
+                index=0,
+                key="exercise_topic_selector"
+            )
+            
+        with col3:
+            method = st.selectbox(
+                "Método de resolução:",
+                ["Qualquer método", "Eliminação de Gauss", "Regra de Cramer", 
+                 "Matriz Inversa", "Gauss-Jordan", "Métodos Iterativos"],
+                index=0
+            )
+        
+        # Gerar novo exercício
+        if "current_exercise" not in st.session_state or st.button("Gerar Novo Exercício", key="generate_exercise_btn"):
             try:
-                steps, solution = newton_nonlinear_system(func, jacobian, initial_guess, max_iter=max_iter, tolerance=tolerance, detailed=True)
+                if "problem" in topic.lower():
+                    # Exercício de aplicação
+                    exercise_data = get_practice_exercise(difficulty, topic)
+                    st.session_state.current_exercise = {
+                        "problem": exercise_data.get("problem", ""),
+                        "A": exercise_data.get("A"),
+                        "b": exercise_data.get("b"),
+                        "vars": exercise_data.get("vars", []),
+                        "solution": None,  # Será calculado abaixo
+                        "difficulty": difficulty,
+                        "topic": topic
+                    }
+                    
+                    # Calcular solução
+                    try:
+                        if st.session_state.current_exercise["A"] is not None and st.session_state.current_exercise["b"] is not None:
+                            A = st.session_state.current_exercise["A"]
+                            b = st.session_state.current_exercise["b"]
+                            
+                            system_type = classify_system(A, b)
+                            st.session_state.current_exercise["system_type"] = system_type
+                            
+                            if system_type == "Sistema Possível e Determinado (SPD)":
+                                try:
+                                    solution = np.linalg.solve(A, b)
+                                    st.session_state.current_exercise["solution"] = solution
+                                except:
+                                    _, solution = gaussian_elimination_steps(A, b)
+                                    st.session_state.current_exercise["solution"] = solution
+                    except:
+                        st.session_state.current_exercise["system_type"] = "Desconhecido"
+                        
+                else:
+                    # Exercício normal
+                    A, b, question, equations, solution, system_type = get_practice_exercise(difficulty, topic)
+                    st.session_state.current_exercise = {
+                        "A": A,
+                        "b": b,
+                        "question": question,
+                        "equations": equations,
+                        "solution": solution,
+                        "difficulty": difficulty,
+                        "topic": topic,
+                        "system_type": system_type
+                    }
+            except Exception as e:
+                st.error(f"Erro ao gerar exercício: {str(e)}")
+                if "current_exercise" not in st.session_state:
+                    st.session_state.current_exercise = {
+                        "question": "Erro ao gerar exercício",
+                        "equations": [],
+                        "difficulty": difficulty,
+                        "topic": topic
+                    }
+        
+        # Mostrar o exercício atual
+        if "problem" in st.session_state.current_exercise:
+            # Mostrar exercício de aplicação
+            st.markdown(f"### Problema de Aplicação ({st.session_state.current_exercise['difficulty']})")
+            
+            st.markdown(f"#### {st.session_state.current_exercise['problem']}")
+            
+            with st.expander("Ver dica", expanded=False):
+                st.markdown("""
+                **Dica**: Para resolver esse tipo de problema:
+                1. Identifique as variáveis envolvidas
+                2. Configure as equações do sistema
+                3. Resolva o sistema usando o método mais adequado
+                """)
                 
-                if solution is not None:
-                    st.success("Sistema resolvido com sucesso!")
+                if st.session_state.current_exercise["A"] is not None and st.session_state.current_exercise["vars"] is not None:
+                    st.markdown("**Sistema associado:**")
+                    A = st.session_state.current_exercise["A"]
+                    b = st.session_state.current_exercise["b"]
+                    var_names = st.session_state.current_exercise["vars"]
                     
-                    st.markdown("### Solução")
-                    if vars_count == 2:
-                        st.markdown(f"x = {solution[0]:.6f}")
-                        st.markdown(f"y = {solution[1]:.6f}")
+                    for i in range(min(len(b), A.shape[0])):
+                        eq_str = format_equation(A[i], var_names[:A.shape[1]], b[i])
+                        st.write(f"Equação {i+1}: {eq_str}")
+            
+        else:
+            # Mostrar exercício normal
+            st.markdown(f"### {st.session_state.current_exercise['question']} ({st.session_state.current_exercise['difficulty']})")
+            
+            for i, eq in enumerate(st.session_state.current_exercise['equations']):
+                st.markdown(f"{i+1}. {eq}")
+            
+            with st.expander("Ver dica", expanded=False):
+                if "system_type" in st.session_state.current_exercise:
+                    system_type = st.session_state.current_exercise["system_type"]
+                    st.markdown(f"**Classificação do sistema**: {system_type}")
+                    
+                    if system_type == "Sistema Possível e Determinado (SPD)":
+                        method_recommendation = ""
+                        if st.session_state.current_exercise["A"].shape[0] == st.session_state.current_exercise["A"].shape[1]:
+                            method_recommendation = "Você pode usar qualquer método (Eliminação de Gauss, Regra de Cramer, Matriz Inversa)."
+                        else:
+                            method_recommendation = "Como o sistema não é quadrado, é recomendado usar o método de Eliminação de Gauss."
+                            
+                        st.markdown(f"**Dica**: Este sistema tem solução única. {method_recommendation}")
+                    
+                    elif system_type == "Sistema Possível e Indeterminado (SPI)":
+                        st.markdown("""
+                        **Dica**: Este sistema tem infinitas soluções. Você pode resolver escalonando a matriz e expressando algumas variáveis em termos de outras (parâmetros).
+                        """)
+                    
+                    else:  # SI
+                        st.markdown("""
+                        **Dica**: Verifique se o sistema tem solução. Um sistema é impossível quando contém equações inconsistentes.
+                        """)
+        
+        # Adicionar visualização se for sistema 2x2 ou 3x3
+        if "A" in st.session_state.current_exercise and st.session_state.current_exercise["A"] is not None:
+            A = st.session_state.current_exercise["A"]
+            b = st.session_state.current_exercise["b"]
+            
+            if A.shape[1] == 2:
+                with st.expander("Visualização Gráfica", expanded=False):
+                    try:
+                        fig = plot_2d_system(A, b)
+                        if fig:
+                            st.pyplot(fig)
+                    except:
+                        st.warning("Não foi possível gerar a visualização do sistema.")
+            elif A.shape[1] == 3:
+                with st.expander("Visualização 3D", expanded=False):
+                    try:
+                        fig = plot_3d_system(A, b)
+                        if fig:
+                            st.plotly_chart(fig, use_container_width=True)
+                    except:
+                        st.warning("Não foi possível gerar a visualização 3D do sistema.")
+        
+        # Campo para resposta do usuário
+        st.markdown("### Sua resposta")
+        
+        solution_type = st.radio(
+            "Tipo de sistema:",
+            ["Sistema Possível e Determinado (SPD)", "Sistema Possível e Indeterminado (SPI)", "Sistema Impossível (SI)"],
+            horizontal=True,
+            key="solution_type_radio"
+        )
+        
+        if solution_type == "Sistema Possível e Determinado (SPD)":
+            if "vars" in st.session_state.current_exercise and st.session_state.current_exercise["vars"]:
+                var_names = st.session_state.current_exercise["vars"]
+            else:
+                var_names = ["x", "y", "z", "w"][:st.session_state.current_exercise["A"].shape[1]]
+                
+            cols = st.columns(min(4, len(var_names)))
+            user_values = []
+            
+            for i, var in enumerate(var_names[:len(cols)]):
+                with cols[i]:
+                    val = st.number_input(f"Valor de {var}:", step=0.1, format="%.4f", key=f"answer_{var}")
+                    user_values.append(val)
+                    
+            if len(var_names) > 4:
+                cols = st.columns(min(4, len(var_names) - 4))
+                for i, var in enumerate(var_names[4:4+len(cols)]):
+                    with cols[i]:
+                        val = st.number_input(f"Valor de {var}:", step=0.1, format="%.4f", key=f"answer_{var}")
+                        user_values.append(val)
+            
+        else:  # SPI ou SI
+            user_answer = st.text_area(
+                "Explique por que o sistema é SPI ou SI e, se for SPI, escreva a solução paramétrica:",
+                height=100,
+                placeholder="Ex: 'O sistema é SPI porque...' ou 'O sistema é SI porque...'"
+            )
+        
+        # Verificar resposta
+        if st.button("Verificar Resposta", key="check_answer_btn"):
+            if solution_type == "Sistema Possível e Determinado (SPD)":
+                if "solution" in st.session_state.current_exercise and st.session_state.current_exercise["solution"] is not None:
+                    solution = st.session_state.current_exercise["solution"]
+                    
+                    if len(user_values) != len(solution):
+                        st.error("O número de valores inseridos não corresponde ao número de incógnitas.")
                     else:
-                        st.markdown(f"x = {solution[0]:.6f}")
-                        st.markdown(f"y = {solution[1]:.6f}")
-                        st.markdown(f"z = {solution[2]:.6f}")
-                    
-                    st.markdown("### Verificação")
-                    if vars_count == 2:
-                        x, y = solution
-                        for i, f in enumerate(functions):
-                            result = eval(f)
-                            st.markdown(f"f{i+1}(x, y) = {result:.10e}")
+                        correct = True
+                        for u, s in zip(user_values, solution):
+                            if abs(u - s) > 1e-2:
+                                correct = False
+                                break
+                                
+                        if correct:
+                            st.success("✅ Correto! Sua solução está correta.")
+                            
+                            # Atualizar estatísticas
+                            st.session_state.user_progress["exercises_completed"] += 1
+                            st.session_state.user_progress["correct_answers"] += 1
+                            st.session_state.user_progress["difficulty_levels"][difficulty] += 1
+                            
+                            # Mostrar verificação
+                            if "A" in st.session_state.current_exercise and "b" in st.session_state.current_exercise:
+                                A = st.session_state.current_exercise["A"]
+                                b = st.session_state.current_exercise["b"]
+                                
+                                for i in range(len(b)):
+                                    expected = b[i]
+                                    calculated = np.dot(A[i], user_values)
+                                    diff = abs(expected - calculated)
+                                    
+                                    if diff < 1e-10:
+                                        st.write(f"Equação {i+1}: {calculated:.4f} = {expected:.4f} ✓")
+                                    else:
+                                        st.write(f"Equação {i+1}: {calculated:.4f} ≈ {expected:.4f} (erro: {diff:.4e})")
+                        else:
+                            st.error("❌ Incorreto. Verifique seus cálculos e tente novamente.")
+                            
+                            # Atualizar estatísticas
+                            st.session_state.user_progress["exercises_completed"] += 1
+                else:
+                    if "system_type" in st.session_state.current_exercise:
+                        expected_type = st.session_state.current_exercise["system_type"]
+                        if expected_type == solution_type:
+                            st.success("✅ Classificação correta do sistema!")
+                            
+                            # Atualizar estatísticas
+                            st.session_state.user_progress["exercises_completed"] += 1
+                            st.session_state.user_progress["correct_answers"] += 1
+                        else:
+                            st.error(f"❌ Classificação incorreta. O sistema é um {expected_type}.")
+                            
+                            # Atualizar estatísticas
+                            st.session_state.user_progress["exercises_completed"] += 1
                     else:
-                        x, y, z = solution
-                        for i, f in enumerate(functions):
-                            result = eval(f)
-                            st.markdown(f"f{i+1}(x, y, z) = {result:.10e}")
+                        st.warning("Não foi possível verificar a resposta. Tente outro exercício.")
+            else:  # SPI ou SI
+                if "system_type" in st.session_state.current_exercise:
+                    expected_type = st.session_state.current_exercise["system_type"]
+                    if expected_type == solution_type:
+                        st.success("✅ Classificação correta do sistema!")
+                        
+                        # Verificar explicação básica
+                        if solution_type == "Sistema Possível e Indeterminado (SPI)" and "parâmetr" in user_answer.lower():
+                            st.success("✅ Sua explicação sobre parâmetros está correta!")
+                        elif solution_type == "Sistema Impossível (SI)" and ("inconsist" in user_answer.lower() or "incompatível" in user_answer.lower()):
+                            st.success("✅ Sua explicação sobre inconsistência está correta!")
+                        else:
+                            st.info("Sua resposta está parcialmente correta. Certifique-se de explicar adequadamente por que o sistema é SPI ou SI.")
+                        
+                        # Atualizar estatísticas
+                        st.session_state.user_progress["exercises_completed"] += 1
+                        st.session_state.user_progress["correct_answers"] += 1
+                    else:
+                        st.error(f"❌ Classificação incorreta. O sistema é um {expected_type}.")
+                        
+                        # Atualizar estatísticas
+                        st.session_state.user_progress["exercises_completed"] += 1
+                else:
+                    st.warning("Não foi possível verificar a resposta. Tente outro exercício.")
                     
-                    # Passos do método
-                    with st.expander("Ver Passos Detalhados", expanded=False):
+            # Salvar no histórico
+            if "exercise_history" not in st.session_state:
+                st.session_state.exercise_history = []
+            
+            # Verificar se este exercício já está no histórico para não duplicar
+            already_in_history = False
+            for entry in st.session_state.exercise_history:
+                if "equations" in entry and "equations" in st.session_state.current_exercise:
+                    if entry["equations"] == st.session_state.current_exercise["equations"]:
+                        already_in_history = True
+                        break
+                elif "problem" in entry and "problem" in st.session_state.current_exercise:
+                    if entry["problem"] == st.session_state.current_exercise["problem"]:
+                        already_in_history = True
+                        break
+            
+            if not already_in_history:
+                history_entry = {
+                    "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    "difficulty": st.session_state.current_exercise["difficulty"],
+                    "topic": st.session_state.current_exercise["topic"],
+                    "correct": correct if solution_type == "Sistema Possível e Determinado (SPD)" else (expected_type == solution_type)
+                }
+                
+                if "equations" in st.session_state.current_exercise:
+                    history_entry["equations"] = st.session_state.current_exercise["equations"]
+                if "problem" in st.session_state.current_exercise:
+                    history_entry["problem"] = st.session_state.current_exercise["problem"]
+                
+                st.session_state.exercise_history.append(history_entry)
+        
+        # Botão para ver a solução
+        if st.button("Ver Solução", key="show_solution_btn"):
+            st.markdown("### Solução Detalhada")
+            
+            if "system_type" in st.session_state.current_exercise:
+                system_type = st.session_state.current_exercise["system_type"]
+                st.markdown(f"**Classificação do Sistema**: {system_type}")
+            
+            if "A" in st.session_state.current_exercise and st.session_state.current_exercise["A"] is not None:
+                A = st.session_state.current_exercise["A"]
+                b = st.session_state.current_exercise["b"]
+                
+                # Escolher método apropriado com base nas preferências do usuário
+                solution_method = method if method != "Qualquer método" else "Eliminação de Gauss"
+                
+                if solution_method == "Eliminação de Gauss":
+                    steps, solution = gaussian_elimination_steps(A, b)
+                    
+                    st.markdown("#### Método de Eliminação de Gauss:")
+                    for step in steps:
+                        st.write(step)
+                    
+                elif solution_method == "Regra de Cramer" and A.shape[0] == A.shape[1]:
+                    steps, solution = cramer_rule(A, b, detailed=True)
+                    
+                    st.markdown("#### Regra de Cramer:")
+                    for step in steps:
+                        st.write(step)
+                        
+                elif solution_method == "Matriz Inversa" and A.shape[0] == A.shape[1]:
+                    steps, solution = matrix_inverse_method(A, b, detailed=True)
+                    
+                    st.markdown("#### Método da Matriz Inversa:")
+                    for step in steps:
+                        st.write(step)
+                        
+                elif solution_method == "Gauss-Jordan":
+                    steps, solution = gauss_jordan_steps(A, b)
+                    
+                    st.markdown("#### Método de Gauss-Jordan:")
+                    for step in steps:
+                        st.write(step)
+                        
+                elif solution_method == "Métodos Iterativos":
+                    # Verificar se é apropriado para métodos iterativos
+                    is_diag_dominant = True
+                    for i in range(min(A.shape[0], A.shape[1])):
+                        if i < A.shape[0] and i < A.shape[1]:
+                            if abs(A[i, i]) <= np.sum(np.abs(A[i, :])) - abs(A[i, i]):
+                                is_diag_dominant = False
+                                break
+                    
+                    if is_diag_dominant:
+                        steps_jacobi, solution_jacobi = jacobi_iteration_method(A, b, detailed=True)
+                        steps_gauss_seidel, solution_gauss_seidel = gauss_seidel_method(A, b, detailed=True)
+                        
+                        st.markdown("#### Método de Jacobi:")
+                        for step in steps_jacobi:
+                            st.write(step)
+                            
+                        st.markdown("#### Método de Gauss-Seidel:")
+                        for step in steps_gauss_seidel:
+                            st.write(step)
+                            
+                        solution = solution_gauss_seidel  # Usar Gauss-Seidel como solução final
+                    else:
+                        st.warning("Este sistema não é diagonalmente dominante, o que pode fazer com que os métodos iterativos não convirjam. Usando Eliminação de Gauss como alternativa.")
+                        steps, solution = gaussian_elimination_steps(A, b)
+                        
+                        st.markdown("#### Método de Eliminação de Gauss:")
                         for step in steps:
                             st.write(step)
-                    
-                    # Visualização para sistemas 2D
-                    if vars_count == 2:
-                        st.markdown("### Visualização Gráfica")
-                        
-                        # Gerar malha para visualização
-                        x_range = np.linspace(solution[0] - 5, solution[0] + 5, 100)
-                        y_range = np.linspace(solution[1] - 5, solution[1] + 5, 100)
-                        X, Y = np.meshgrid(x_range, y_range)
-                        
-                        # Calcular funções na malha
-                        Z1 = np.zeros_like(X)
-                        Z2 = np.zeros_like(X)
-                        
-                        for i in range(len(x_range)):
-                            for j in range(len(y_range)):
-                                x, y = X[i, j], Y[i, j]
-                                try:
-                                    Z1[i, j] = eval(functions[0])
-                                    Z2[i, j] = eval(functions[1])
-                                except:
-                                    Z1[i, j] = np.nan
-                                    Z2[i, j] = np.nan
-                        
-                        # Plotar contornos de nível zero (curvas onde f(x,y) = 0)
-                        fig, ax = plt.subplots(figsize=(10, 8))
-                        cs1 = ax.contour(X, Y, Z1, levels=[0], colors='blue', linewidths=2)
-                        cs2 = ax.contour(X, Y, Z2, levels=[0], colors='red', linewidths=2)
-                        
-                        # Adicionar rótulos
-                        ax.clabel(cs1, inline=True, fontsize=10, fmt="f₁(x,y)=0")
-                        ax.clabel(cs2, inline=True, fontsize=10, fmt="f₂(x,y)=0")
-                        
-                        # Marcar solução
-                        ax.plot(solution[0], solution[1], 'ko', markersize=8)
-                        ax.annotate(f'Solução: ({solution[0]:.4f}, {solution[1]:.4f})', 
-                                   xy=(solution[0], solution[1]), 
-                                   xytext=(10, 10), 
-                                   textcoords='offset points',
-                                   fontsize=12,
-                                   fontweight='bold')
-                        
-                        # Configuração do gráfico
-                        ax.grid(True, alpha=0.3)
-                        ax.set_xlabel('x', fontsize=12)
-                        ax.set_ylabel('y', fontsize=12)
-                        ax.set_title('Visualização do Sistema Não-Linear', fontsize=14, fontweight='bold')
-                        
-                        st.pyplot(fig)
                 else:
-                    st.error("O método não convergiu. Tente uma aproximação inicial diferente ou ajuste os parâmetros.")
-            except Exception as e:
-                st.error(f"Erro ao resolver o sistema: {str(e)}")
-    else:
-        st.info("Preencha todas as funções corretamente para resolver o sistema.")
-
-# Adicionar inicialização para controle de progresso dos desafios
-def initialize_progress():
-    if "user_progress" not in st.session_state:
-        st.session_state.user_progress = {
-            "exercises_completed": 0,
-            "correct_answers": 0,
-            "topics_studied": [],
-            "difficulty_levels": {"Fácil": 0, "Médio": 0, "Difícil": 0},
-            "last_login": datetime.datetime.now().strftime("%d/%m/%Y"),
-            "streak": 1,
-            # Adicionando campos para desafios
-            "challenges_completed": 0,
-            "challenge_points": 0
-        }                    
+                    steps, solution = gaussian_elimination_steps(A, b)
+                    
+                    st.markdown("#### Método de Eliminação de Gauss:")
+                    for step in steps:
+                        st.write(step)
+                
+                # Mostrar a solução final
+                st.markdown("#### Solução Final:")
+                
+                if solution is not None:
+                    if "vars" in st.session_state.current_exercise and st.session_state.current_exercise["vars"]:
+                        var_names = st.session_state.current_exercise["vars"]
+                    else:
+                        var_names = ["x", "y", "z", "w"][:A.shape[1]]
+                        
+                    for i, var in enumerate(var_names):
+                        if i < len(solution):
+                            st.markdown(f"- {var} = {solution[i]:.4f}")
+                else:
+                    if system_type == "Sistema Possível e Indeterminado (SPI)":
+                        st.markdown("Este sistema possui infinitas soluções. A solução pode ser expressa em forma paramétrica.")
+                        
+                        # Tentar obter solução simbólica
+                        try:
+                            symbolic_solution, _ = sympy_solve_system(A, b)
+                            
+                            if symbolic_solution:
+                                st.markdown("**Solução Paramétrica:**")
+                                
+                                if isinstance(symbolic_solution, dict):
+                                    for var, expr in symbolic_solution.items():
+                                        st.latex(f"{sp.latex(var)} = {sp.latex(expr)}")
+                                else:
+                                    st.latex(sp.latex(symbolic_solution))
+                        except:
+                            st.info("Não foi possível determinar a forma paramétrica exata da solução.")
+                    
+                    elif system_type == "Sistema Impossível (SI)":
+                        st.markdown("Este sistema não possui solução, pois as equações são inconsistentes entre si.")
+                    
+            else:
+                st.warning("Não foi possível obter a solução para este exercício.")
+                
+            # Salvar no histórico mesmo se o usuário viu a solução sem tentar
+            if "exercise_history" not in st.session_state:
+                st.session_state.exercise_history = []
+            
+            # Verificar se este exercício já está no histórico para não duplicar
+            already_in_history = False
+            for entry in st.session_state.exercise_history:
+                if "equations" in entry and "equations" in st.session_state.current_exercise:
+                    if entry["equations"] == st.session_state.current_exercise["equations"]:
+                        already_in_history = True
+                        break
+                elif "problem" in entry and "problem" in st.session_state.current_exercise:
+                    if entry["problem"] == st.session_state.current_exercise["problem"]:
+                        already_in_history = True
+                        break
+            
+            if not already_in_history:
+                history_entry = {
+                    "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    "difficulty": st.session_state.current_exercise["difficulty"],
+                    "topic": st.session_state.current_exercise["topic"],
+                    "correct": False,
+                    "viewed_solution": True
+                }
+                
+                if "equations" in st.session_state.current_exercise:
+                    history_entry["equations"] = st.session_state.current_exercise["equations"]
+                if "problem" in st.session_state.current_exercise:
+                    history_entry["problem"] = st.session_state.current_exercise["problem"]
+                
+                st.session_state.exercise_history.append(history_entry)
+                
+            # Atualizar estatísticas
+            st.session_state.user_progress["exercises_completed"] += 1
+    
+    with tab2:
+        st.markdown('<h2 class="sub-header">Desafios Semanais</h2>', unsafe_allow_html=True)
+        
+        # Lista de desafios
+        challenges = [
+            {
+                "title": "Circuitos Elétricos",
+                "description": "Resolva um sistema de equações que modela um circuito com 5 correntes desconhecidas.",
+                "difficulty": "Difícil",
+                "points": 100,
+                "deadline": "25/03/2025",
+                "status": "Disponível"
+            },
+            {
+                "title": "Mistura Química",
+                "description": "Encontre as quantidades exatas para uma mistura química com 4 componentes.",
+                "difficulty": "Médio",
+                "points": 75,
+                "deadline": "27/03/2025",
+                "status": "Disponível"
+            },
+            {
+                "title": "Balanceamento de Reações",
+                "description": "Use sistemas lineares para balancear uma reação química complexa.",
+                "difficulty": "Médio",
+                "points": 50,
+                "deadline": "30/03/2025",
+                "status": "Disponível"
+            },
+            {
+                "title": "Sistema Mal Condicionado",
+                "description": "Resolva um sistema linearmente independente, mas numericamente instável.",
+                "difficulty": "Difícil",
+                "points": 125,
+                "deadline": "01/04/2025",
+                "status": "Bloqueado"
+            },
+            {
+                "title": "Análise de Tráfego",
+                "description": "Modele e resolva um problema de fluxo de tráfego em uma rede com 6 nós.",
+                "difficulty": "Difícil",
+                "points": 150,
+                "deadline": "05/04/2025",
+                "status": "Bloqueado"
+            }
+        ]
+        
+        # Mostrar desafios disponíveis em cards
+        st.markdown("### Desafios disponíveis")
+        
+        for i, challenge in enumerate(challenges):
+            if challenge["status"] == "Disponível":
+                with st.container():
+                    st.markdown(f"""
+                    <div style="background-color: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #1E88E5;">
+                        <h4 style="margin-top: 0;">{challenge["title"]} <span style="background-color: #e3f2fd; color: #1E88E5; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem; float: right;">{challenge["difficulty"]} • {challenge["points"]} pontos</span></h4>
+                        <p>{challenge["description"]}</p>
+                        <p style="color: #666; font-size: 0.9rem;">Prazo: {challenge["deadline"]}</p>
+                        <button style="background-color: #1E88E5; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Iniciar Desafio</button>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # Mostrar desafios bloqueados
+        st.markdown("### Próximos desafios")
+        
+        for i, challenge in enumerate(challenges):
+            if challenge["status"] == "Bloqueado":
+                with st.container():
+                    st.markdown(f"""
+                    <div style="background-color: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #9e9e9e; opacity: 0.7;">
+                        <h4 style="margin-top: 0;">{challenge["title"]} <span style="background-color: #f5f5f5; color: #757575; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem; float: right;">{challenge["difficulty"]} • {challenge["points"]} pontos</span></h4>
+                        <p>{challenge["description"]}</p>
+                        <p style="color: #666; font-size: 0.9rem;">Disponível a partir de: {challenge["deadline"]}</p>
+                        <button style="background-color: #9e9e9e; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: not-allowed;">Bloqueado</button>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        # Ranking
+        st.markdown("### Ranking dos Desafios")
+        
+        ranking_data = [
+            {"Posição": 1, "Usuário": "MatematicaMaster", "Pontos": 425, "Desafios": 4},
+            {"Posição": 2, "Usuário": "AlgebraFã", "Pontos": 350, "Desafios": 3},
+            {"Posição": 3, "Usuário": "SistemasGuru", "Pontos": 275, "Desafios": 3},
+            {"Posição": 4, "Usuário": "Estudante (você)", "Pontos": 150, "Desafios": 2},
+            {"Posição": 5, "Usuário": "MatrizInversa", "Pontos": 125, "Desafios": 1},
+        ]
+        
+        st.dataframe(
+            pd.DataFrame(ranking_data),
+            use_container_width=True,
+            hide_index=True
+        )
+    
+    with tab3:
+        st.markdown('<h2 class="sub-header">Seu Histórico de Exercícios</h2>', unsafe_allow_html=True)
+        
+        if "exercise_history" not in st.session_state or not st.session_state.exercise_history:
+            st.info("Seu histórico de exercícios aparecerá aqui após você resolver alguns problemas.")
+        else:
+            # Estatísticas
+            total = len(st.session_state.exercise_history)
+            correct = sum(1 for e in st.session_state.exercise_history if e.get("correct", False))
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f'<p class="metric-value">{total}</p>', unsafe_allow_html=True)
+                st.markdown('<p class="metric-label">Total de Exercícios</p>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col2:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f'<p class="metric-value">{correct}</p>', unsafe_allow_html=True)
+                st.markdown('<p class="metric-label">Acertos</p>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col3:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.markdown(f'<p class="metric-value">{int(correct/total*100) if total > 0 else 0}%</p>', unsafe_allow_html=True)
+                st.markdown('<p class="metric-label">Taxa de Acerto</p>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            # Filtros
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                filter_difficulty = st.multiselect(
+                    "Filtrar por dificuldade:",
+                    ["Fácil", "Médio", "Difícil"],
+                    default=["Fácil", "Médio", "Difícil"]
+                )
+                
+            with col2:
+                filter_status = st.multiselect(
+                    "Filtrar por status:",
+                    ["Correto", "Incorreto", "Visualizado"],
+                    default=["Correto", "Incorreto", "Visualizado"]
+                )
+            
+            # Filtrar histórico
+            filtered_history = []
+            for entry in st.session_state.exercise_history:
+                if entry.get("difficulty") in filter_difficulty:
+                    status = "Visualizado" if entry.get("viewed_solution", False) else ("Correto" if entry.get("correct", False) else "Incorreto")
+                    if status in filter_status:
+                        filtered_history.append(entry)
+            
+            # Tabela de histórico
+            if filtered_history:
+                history_data = []
+                for i, exercise in enumerate(filtered_history[::-1]):  # Mais recente primeiro
+                    status = "Visualizado" if exercise.get("viewed_solution", False) else ("Correto" if exercise.get("correct", False) else "Incorreto")
+                    
+                    question = ""
+                    if "equations" in exercise and exercise["equations"]:
+                        question = "<br>".join(exercise["equations"])
+                    elif "problem" in exercise:
+                        question = exercise["problem"][:100] + "..." if len(exercise["problem"]) > 100 else exercise["problem"]
+                    
+                    history_data.append({
+                        "Data": exercise.get("date", ""),
+                        "Dificuldade": exercise.get("difficulty", ""),
+                        "Tópico": exercise.get("topic", ""),
+                        "Questão": question,
+                        "Resultado": status
+                    })
+                
+                history_df = pd.DataFrame(history_data)
+                st.dataframe(history_df, use_container_width=True, hide_index=True)
+                
+                # Botão para exportar histórico
+                if st.button("📥 Exportar Histórico (CSV)", key="export_history_btn"):
+                    csv = history_df.to_csv(index=False)
+                    
+                    # Criar link para download
+                    b64 = base64.b64encode(csv.encode()).decode()
+                    href = f'<a href="data:file/csv;base64,{b64}" download="historico_exercicios.csv">Clique para baixar o histórico completo</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+                    st.success("Histórico exportado com sucesso!")
+            else:
+                st.info("Nenhum exercício encontrado com os filtros selecionados.")
+                
+            # Botão para limpar histórico
+            if st.button("🗑️ Limpar Histórico", key="clear_history_btn"):
+                st.session_state.exercise_history = []
+                st.rerun()
+    
+    with tab4:
+        st.markdown('<h2 class="sub-header">Seu Progresso de Aprendizagem</h2>', unsafe_allow_html=True)
+        
+        # Dados de progresso
+        exercises_completed = st.session_state.user_progress["exercises_completed"]
+        correct_answers = st.session_state.user_progress["correct_answers"]
+        topics_studied = st.session_state.user_progress["topics_studied"]
+        difficulty_levels = st.session_state.user_progress["difficulty_levels"]
+        
+        # Métricas principais
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<p class="metric-value">{exercises_completed}</p>', unsafe_allow_html=True)
+            st.markdown('<p class="metric-label">Exercícios</p>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with col2:
+            accuracy = int(correct_answers / max(1, exercises_completed) * 100)
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<p class="metric-value">{accuracy}%</p>', unsafe_allow_html=True)
+            st.markdown('<p class="metric-label">Precisão</p>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with col3:
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<p class="metric-value">{len(topics_studied)}</p>', unsafe_allow_html=True)
+            st.markdown('<p class="metric-label">Tópicos</p>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with col4:
+            streak = st.session_state.user_progress["streak"]
+            st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+            st.markdown(f'<p class="metric-value">{streak}</p>', unsafe_allow_html=True)
+            st.markdown('<p class="metric-label">Sequência</p>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Gráficos de progresso
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Gráfico de precisão por dificuldade
+            st.markdown("### Precisão por Nível de Dificuldade")
+            
+            # Simular dados para o gráfico
+            difficulty_data = {
+                "Fácil": min(100, 75 + difficulty_levels["Fácil"] * 5),
+                "Médio": min(100, 60 + difficulty_levels["Médio"] * 4),
+                "Difícil": min(100, 40 + difficulty_levels["Difícil"] * 3)
+            }
+            
+            fig, ax = plt.subplots(figsize=(8, 5))
+            
+            difficulties = list(difficulty_data.keys())
+            accuracies = list(difficulty_data.values())
+            colors = ['#4CAF50', '#FFC107', '#F44336']
+            
+            bars = ax.bar(difficulties, accuracies, color=colors)
+            
+            # Adicionar rótulos
+            ax.set_ylim(0, 100)
+            ax.set_ylabel('Precisão (%)')
+            ax.set_title('Precisão por Nível de Dificuldade')
+            
+            # Adicionar valores nas barras
+            for bar in bars:
+                height = bar.get_height()
+                ax.annotate(f'{height:.0f}%',
+                            xy=(bar.get_x() + bar.get_width() / 2, height),
+                            xytext=(0, 3),  # 3 pontos de offset vertical
+                            textcoords="offset points",
+                            ha='center', va='bottom')
+            
+            st.pyplot(fig)
+            
+        with col2:
+            # Gráfico de tópicos estudados
+            st.markdown("### Tópicos Estudados")
+            
+            # Simular dados para o gráfico
+            topics_count = {}
+            all_topics = ["Sistemas 2x2", "Sistemas 3x3", "Métodos Iterativos", "Aplicações", "Mal Condicionados", "Sistemas SPI", "Sistemas SI"]
+            
+            for topic in all_topics:
+                # Contar ocorrências nos tópicos estudados
+                count = sum(1 for t in topics_studied if topic.lower() in t.lower())
+                if count > 0 or topic in ["Sistemas 2x2", "Sistemas 3x3", "Aplicações"]:  # Garantir que alguns tópicos básicos apareçam
+                    topics_count[topic] = max(1, count)
+            
+            # Se não houver tópicos estudados, adicionar alguns padrão
+            if not topics_count:
+                topics_count = {
+                    "Sistemas 2x2": 3,
+                    "Sistemas 3x3": 2,
+                    "Aplicações": 1
+                }
+            
+            fig, ax = plt.subplots(figsize=(8, 5))
+            
+            topics = list(topics_count.keys())
+            counts = list(topics_count.values())
+            
+            # Ordenar por contagem
+            sorted_indices = sorted(range(len(counts)), key=lambda i: counts[i], reverse=True)
+            topics = [topics[i] for i in sorted_indices]
+            counts = [counts[i] for i in sorted_indices]
+            
+            # Limitar a 5 tópicos para melhor visualização
+            if len(topics) > 5:
+                topics = topics[:5]
+                counts = counts[:5]
+            
+            bars = ax.barh(topics, counts, color='#1E88E5')
+            
+            # Adicionar rótulos
+            ax.set_xlabel('Número de Estudos')
+            ax.set_title('Tópicos Mais Estudados')
+            
+            # Adicionar valores nas barras
+            for i, bar in enumerate(bars):
+                width = bar.get_width()
+                ax.annotate(f'{width}',
+                           xy=(width, bar.get_y() + bar.get_height()/2),
+                           xytext=(3, 0),  # 3 pontos de offset horizontal
+                           textcoords="offset points",
+                           ha='left', va='center')
+            
+            st.pyplot(fig)
+        
+        # Curva de progresso ao longo do tempo
+        st.markdown("### Progresso ao Longo do Tempo")
+        
+        # Simular dados de progresso por dia
+        today = datetime.datetime.now()
+        dates = [(today - datetime.timedelta(days=i)).strftime("%d/%m") for i in range(6, -1, -1)]
+        
+        # Simular exercícios por dia
+        exercises_per_day = [0, 2, 5, 0, 3, 1, 4]
+        correct_per_day = [0, 1, 3, 0, 2, 1, 3]
+        
+        # Ajustar com o progresso real
+        exercises_per_day[-1] = min(10, exercises_completed)
+        correct_per_day[-1] = min(exercises_per_day[-1], correct_answers)
+        
+        fig, ax = plt.subplots(figsize=(10, 5))
+        
+        ax.plot(dates, exercises_per_day, 'o-', color='#1E88E5', label='Exercícios')
+        ax.plot(dates, correct_per_day, 'o-', color='#4CAF50', label='Acertos')
+        
+        # Adicionar área sombreada
+        ax.fill_between(dates, correct_per_day, color='#4CAF50', alpha=0.3)
+        
+        # Adicionar rótulos
+        ax.set_xlabel('Data')
+        ax.set_ylabel('Quantidade')
+        ax.set_title('Progresso nos Últimos 7 Dias')
+        ax.legend()
+        
+        # Ajustar limites
+        ax.set_ylim(0, max(exercises_per_day) + 2)
+        
+        # Adicionar grade
+        ax.grid(True, alpha=0.3)
+        
+        st.pyplot(fig)
+        
+        # Metas e recomendações
+        st.markdown("### Metas e Recomendações")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div style="background-color: #e3f2fd; border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                <h4 style="margin-top: 0;">📊 Metas Semanais</h4>
+                <ul>
+                    <li>Completar 20 exercícios</li>
+                    <li>Atingir precisão de 80%</li>
+                    <li>Estudar 5 tópicos diferentes</li>
+                    <li>Resolver 2 desafios</li>
+                </ul>
+                <div style="background-color: #bbdefb; height: 10px; border-radius: 5px; margin-top: 10px;">
+                    <div style="background-color: #1E88E5; width: 45%; height: 100%; border-radius: 5px;"></div>
+                </div>
+                <p style="text-align: right; margin-top: 5px; font-size: 0.9rem;">Progresso: 45%</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col2:
+            st.markdown("""
+            <div style="background-color: #e8f5e9; border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                <h4 style="margin-top: 0;">📚 Recomendações</h4>
+                <p>Com base no seu desempenho, recomendamos:</p>
+                <ul>
+                    <li>Praticar mais exercícios de <strong>Sistemas 3×3</strong></li>
+                    <li>Revisar o <strong>Método de Gauss-Jordan</strong></li>
+                    <li>Tentar resolver problemas de <strong>aplicação prática</strong></li>
+                </ul>
+                <button style="background-color: #4CAF50; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Gerar Exercício Recomendado</button>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # Certificados e conquistas
+        st.markdown("### Certificados e Conquistas")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            <div style="background-color: #fff3e0; border-radius: 10px; padding: 15px; text-align: center;">
+                <h4 style="margin-top: 0;">🥉 Iniciante</h4>
+                <p style="font-size: 0.9rem;">Completou 10 exercícios</p>
+                <p style="color: #FB8C00; font-weight: bold;">CONQUISTADO</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col2:
+            st.markdown("""
+            <div style="background-color: #f5f5f5; border-radius: 10px; padding: 15px; text-align: center;">
+                <h4 style="margin-top: 0;">🥈 Intermediário</h4>
+                <p style="font-size: 0.9rem;">Completar 30 exercícios com 70% de precisão</p>
+                <p style="color: #9E9E9E; font-weight: bold;">EM PROGRESSO (45%)</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col3:
+            st.markdown("""
+            <div style="background-color: #f5f5f5; border-radius: 10px; padding: 15px; text-align: center;">
+                <h4 style="margin-top: 0;">🥇 Avançado</h4>
+                <p style="font-size: 0.9rem;">Resolver 5 desafios difíceis</p>
+                <p style="color: #9E9E9E; font-weight: bold;">BLOQUEADO</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 def show_examples_page():
     st.markdown('<h1 class="main-header">Exemplos Resolvidos</h1>', unsafe_allow_html=True)
