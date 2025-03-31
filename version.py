@@ -1778,22 +1778,22 @@ def show_home_page():
         # Botões de recursos principais com descrições
         if st.button("🧮 Resolver um Sistema", key="home_solve_btn"):
             st.session_state.page = "Resolver Sistema"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown("Resolva sistemas lineares de 2, 3 ou 4 incógnitas usando vários métodos.")
         
         if st.button("📚 Estudar Teoria", key="home_theory_btn"):
             st.session_state.page = "Teoria"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown("Aprenda os fundamentos e conceitos avançados de sistemas lineares.")
         
         if st.button("✏️ Praticar Exercícios", key="home_exercise_btn"):
             st.session_state.page = "Exercícios"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown("Teste seus conhecimentos com exercícios de diferentes níveis.")
         
         if st.button("📋 Ver Exemplos Resolvidos", key="home_examples_btn"):
             st.session_state.page = "Exemplos"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown("Explore sistemas resolvidos passo a passo com explicações detalhadas.")
         
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1826,7 +1826,7 @@ def show_home_page():
         
         if st.button("📈 Ver Progresso Completo", key="home_progress_btn"):
             st.session_state.page = "Meu Progresso"
-            st.experimental_rerun()
+            st.rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -1840,7 +1840,7 @@ def show_home_page():
         st.markdown('Consulte cartões de referência com fórmulas e conceitos essenciais.')
         if st.button("Acessar Referências", key="home_ref_btn"):
             st.session_state.page = "Referência Rápida"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('<div class="feature-card">', unsafe_allow_html=True)
@@ -1848,7 +1848,7 @@ def show_home_page():
         st.markdown('Assista a vídeos explicativos sobre diversos tópicos de sistemas lineares.')
         if st.button("Ver Videoaulas", key="home_video_btn"):
             st.session_state.page = "Vídeoaulas"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('<div class="feature-card">', unsafe_allow_html=True)
@@ -1856,7 +1856,7 @@ def show_home_page():
         st.markdown('Veja representações gráficas de sistemas para melhor compreensão.')
         if st.button("Explorar Visualizações", key="home_visual_btn"):
             st.session_state.page = "Resolver Sistema"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1891,7 +1891,7 @@ def show_home_page():
         st.markdown('Resolva o sistema:\n\n3x + 2y = 13\n\nx - y = 1')
         if st.button("Praticar Agora", key="rec_btn1"):
             st.session_state.page = "Exercícios"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
     
     with rec2:
@@ -1901,7 +1901,7 @@ def show_home_page():
         st.markdown('Um problema de mistura de produtos químicos com três componentes.')
         if st.button("Praticar Agora", key="rec_btn2"):
             st.session_state.page = "Exercícios"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
     
     with rec3:
@@ -1911,7 +1911,7 @@ def show_home_page():
         st.markdown('Resolva e classifique o sistema com infinitas soluções.')
         if st.button("Praticar Agora", key="rec_btn3"):
             st.session_state.page = "Exercícios"
-            st.experimental_rerun()
+            st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Rodapé com informações adicionais
@@ -2178,7 +2178,7 @@ def show_solver_page():
             st.session_state.user_progress["exercises_completed"] += 1
             
             # Mudar para a aba de resultados
-            st.experimental_rerun()
+            st.rerun()
             
     with tab2:
         if not hasattr(st.session_state, 'system_solved') or not st.session_state.system_solved:
@@ -3828,7 +3828,7 @@ def show_theory_page():
         # Botão para acessar videoaulas
         if st.button("🎬 Acessar Videoaulas", key="video_btn"):
             st.session_state.page = "Vídeoaulas"
-            st.experimental_rerun()
+            st.rerun()
             
         # Botão para adicionar aos favoritos
         if st.button("⭐ Adicionar aos Favoritos", key="fav_btn"):
@@ -3874,7 +3874,7 @@ def show_theory_page():
             if st.button(f"📌 {topic}", key=f"related_{topic}"):
                 # Atualizar tópico selecionado
                 st.session_state.theory_topic = topic
-                st.experimental_rerun()
+                st.rerun()
     
     with col2:
         # Atualizar histórico de tópicos estudados
@@ -3900,7 +3900,7 @@ def show_theory_page():
             }
             
             st.session_state.exercise_topic = topic_to_exercise.get(selected_topic, "Geral")
-            st.experimental_rerun()
+            st.rerun()
 
 def show_exercises_page():
     st.markdown('<h1 class="main-header">Exercícios de Sistemas Lineares</h1>', unsafe_allow_html=True)
@@ -4571,7 +4571,7 @@ def show_exercises_page():
             # Botão para limpar histórico
             if st.button("🗑️ Limpar Histórico", key="clear_history_btn"):
                 st.session_state.exercise_history = []
-                st.experimental_rerun()
+                st.rerun()
     
     with tab4:
         st.markdown('<h2 class="sub-header">Seu Progresso de Aprendizagem</h2>', unsafe_allow_html=True)
@@ -4875,13 +4875,13 @@ def show_examples_page():
                         "date": example["date"]
                     }
                     
-                    st.experimental_rerun()
+                    st.rerun()
         else:
             st.info("Você ainda não salvou nenhum exemplo. Os sistemas que você resolver e salvar aparecerão aqui.")
             
         if st.button("➕ Adicionar Sistema Personalizado", key="add_custom_btn"):
             st.session_state.adding_custom_example = True
-            st.experimental_rerun()
+            st.rerun()
     
     with col2:
         # Interface para adicionar sistema personalizado
@@ -4936,7 +4936,7 @@ def show_examples_page():
             with col1:
                 if st.button("Cancelar", key="cancel_custom_btn"):
                     st.session_state.adding_custom_example = False
-                    st.experimental_rerun()
+                    st.rerun()
             
             with col2:
                 if st.button("Salvar Sistema", key="save_custom_btn", type="primary"):
@@ -4960,7 +4960,7 @@ def show_examples_page():
                     
                     st.session_state.adding_custom_example = False
                     st.success("Sistema personalizado salvo com sucesso!")
-                    st.experimental_rerun()
+                    st.rerun()
                     
             st.markdown("---")
         
@@ -5254,7 +5254,7 @@ def show_examples_page():
         if hasattr(st.session_state, 'custom_example') and st.session_state.custom_example:
             if st.button("❌ Remover Exemplo Personalizado", key="remove_custom_btn"):
                 st.session_state.custom_example = None
-                st.experimental_rerun()
+                st.rerun()
 
 def show_reference_page():
     st.markdown('<h1 class="main-header">Referência Rápida</h1>', unsafe_allow_html=True)
@@ -5323,7 +5323,7 @@ def show_reference_page():
                 if st.button(f"{card['title']}", key=f"fav_card_{i}"):
                     # Selecionar cartão
                     st.session_state.reference_topic = card["title"]
-                    st.experimental_rerun()
+                    st.rerun()
         else:
             st.info("Seus cartões de referência favoritos aparecerão aqui.")
     
