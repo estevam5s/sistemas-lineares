@@ -1932,14 +1932,29 @@ def show_solver_page():
     # Inicializar variáveis de estado se não existirem
     if "solver_show_steps" not in st.session_state:
         st.session_state.solver_show_steps = True
-    st.markdown('<h1 class="main-header">Resolver Sistema Linear</h1>', unsafe_allow_html=True)
-
-    if "active_tab" not in st.session_state:
-        st.session_state.active_tab = "Inserir Sistema"
     
-    tab1, tab2, tab3 = st.tabs(["📝 Inserir Sistema", "🔍 Resultados", "📊 Visualização"])
-
-    with tab1:
+    # Controle de abas
+    if "solver_current_tab" not in st.session_state:
+        st.session_state.solver_current_tab = "Inserir Sistema"
+        
+    st.markdown('<h1 class="main-header">Resolver Sistema Linear</h1>', unsafe_allow_html=True)
+    
+    # Abas de navegação
+    tabs = ["📝 Inserir Sistema", "🔍 Resultados", "📊 Visualização"]
+    selected_tab = st.radio("", tabs, horizontal=True, 
+                            index=tabs.index(f"{'📝 Inserir Sistema' if st.session_state.solver_current_tab == 'Inserir Sistema' else '🔍 Resultados' if st.session_state.solver_current_tab == 'Resultados' else '📊 Visualização'}"),
+                            key="solver_tab_selector")
+    
+    # Atualizar a aba atual
+    if "📝 Inserir Sistema" in selected_tab:
+        st.session_state.solver_current_tab = "Inserir Sistema"
+    elif "🔍 Resultados" in selected_tab:
+        st.session_state.solver_current_tab = "Resultados"
+    else:
+        st.session_state.solver_current_tab = "Visualização"
+    
+    # Conteúdo da aba atual
+    if st.session_state.solver_current_tab == "Inserir Sistema":
         st.markdown('<h2 class="sub-header">Insira seu sistema de equações lineares</h2>', unsafe_allow_html=True)
         
         col1, col2 = st.columns([3, 1])
@@ -2112,7 +2127,7 @@ def show_solver_page():
             solution_method = st.selectbox(
                 "Escolha o método:",
                 ["Eliminação de Gauss", "Gauss-Jordan", "Regra de Cramer", "Matriz Inversa", 
-                "Decomposição LU", "Jacobi", "Gauss-Seidel", "Todos os Métodos"],
+                 "Decomposição LU", "Jacobi", "Gauss-Seidel", "Todos os Métodos"],
                 key="solution_method_select"
             )
             
@@ -2196,313 +2211,317 @@ def show_solver_page():
                 # Mostrar mensagem de sucesso e sugerir ir para a próxima aba
                 st.success("Sistema resolvido com sucesso! Veja os resultados na aba 'Resultados'.")
                 
-                # Usar session_state para indicar que queremos mostrar os resultados
-                st.session_state.show_results_tab = True
-                
-                # Não usamos rerun aqui para evitar problemas com o estado da sessão
+                # Mudar para a aba de resultados automaticamente
+                st.session_state.solver_current_tab = "Resultados"
+                st.rerun()
                 
             except Exception as e:
                 st.error(f"Erro ao resolver o sistema: {str(e)}")
                 st.session_state.system_solved = False
 
-    with tab2:
+    elif st.session_state.solver_current_tab == "Resultados":
+        # Verificar se um sistema foi resolvido
         if not hasattr(st.session_state, 'system_solved') or not st.session_state.system_solved:
             st.info("Insira e resolva um sistema na aba 'Inserir Sistema'")
-            st.stop()
-        
-        st.markdown('<h2 class="sub-header">Resultados da Resolução</h2>', unsafe_allow_html=True)
-        
-        # Exibir classificação do sistema
-        st.markdown(f"**Classificação do Sistema:** {st.session_state.system_classification}")
-        
-        # Mostrar as equações do sistema
-        st.markdown("### Sistema original:")
-        var_names = ["x", "y", "z", "w", "v", "u"][:st.session_state.vars_count]
-        A = st.session_state.A
-        b = st.session_state.b
-        
-        for i in range(len(b)):
-            eq_str = format_equation(A[i], var_names, b[i])
-            st.write(f"Equação {i+1}: {eq_str}")
-        
-        # Exibir matriz aumentada
-        with st.expander("Ver matriz aumentada", expanded=False):
-            augmented = np.column_stack((A, b))
-            st.markdown("**Matriz aumentada [A|b]:**")
-            st.dataframe(pd.DataFrame(augmented, 
-                                     columns=[f"{var}" for var in var_names] + ["b"],
-                                     index=[f"Eq {i+1}" for i in range(len(b))]))
-        
-        # Exibir solução para cada método
-        st.markdown("### Resultados por método:")
-        
-        for method, result in st.session_state.results.items():
-            with st.expander(f"📊 {method}", expanded=method == st.session_state.solution_method):
-                steps = result["steps"]
-                solution = result["solution"]
+            st.session_state.solver_current_tab = "Inserir Sistema"
+            st.rerun()
+        else:
+            # Código da aba "Resultados"
+            st.markdown('<h2 class="sub-header">Resultados da Resolução</h2>', unsafe_allow_html=True)
+            
+            # Exibir classificação do sistema
+            st.markdown(f"**Classificação do Sistema:** {st.session_state.system_classification}")
+            
+            # Mostrar as equações do sistema
+            st.markdown("### Sistema original:")
+            var_names = ["x", "y", "z", "w", "v", "u"][:st.session_state.vars_count]
+            A = st.session_state.A
+            b = st.session_state.b
+            
+            for i in range(len(b)):
+                eq_str = format_equation(A[i], var_names, b[i])
+                st.write(f"Equação {i+1}: {eq_str}")
+            
+            # Exibir matriz aumentada
+            with st.expander("Ver matriz aumentada", expanded=False):
+                augmented = np.column_stack((A, b))
+                st.markdown("**Matriz aumentada [A|b]:**")
+                st.dataframe(pd.DataFrame(augmented, 
+                                        columns=[f"{var}" for var in var_names] + ["b"],
+                                        index=[f"Eq {i+1}" for i in range(len(b))]))
+            
+            # Exibir solução para cada método
+            st.markdown("### Resultados por método:")
+            
+            for method, result in st.session_state.results.items():
+                with st.expander(f"📊 {method}", expanded=method == st.session_state.solution_method):
+                    steps = result["steps"]
+                    solution = result["solution"]
+                    
+                    if solution is not None:
+                        st.markdown("**Solução encontrada:**")
+                        
+                        # Criar dataframe da solução
+                        solution_df = pd.DataFrame({
+                            "Variável": var_names[:len(solution)],
+                            "Valor": [float(val) for val in solution]
+                        })
+                        st.dataframe(solution_df)
+                        
+                        # Mostrar precisão da solução
+                        residual = np.linalg.norm(np.dot(A, solution) - b)
+                        st.markdown(f"**Resíduo:** {residual:.2e}")
+                        
+                        # Verificação rápida da solução
+                        st.markdown("**Verificação rápida:**")
+                        for i in range(len(b)):
+                            calculated = np.dot(A[i], solution)
+                            is_correct = abs(calculated - b[i]) < 1e-10
+                            st.markdown(f"Equação {i+1}: {calculated:.4f} ≈ {b[i]:.4f} {'✓' if is_correct else '✗'}")
+                        
+                    else:
+                        st.write("Não foi possível encontrar uma solução única por este método.")
+                    
+                    if st.session_state.solver_show_steps:
+                        st.markdown("**Passos detalhados:**")
+                        for step in steps:
+                            st.write(step)
+            
+            # Adicionar interpretação da solução
+            st.markdown("### Interpretação da Solução")
+            
+            if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
+                st.success("O sistema possui uma única solução, que satisfaz todas as equações simultaneamente.")
+                
+                # Obter uma solução válida (qualquer uma)
+                solution = None
+                for result in st.session_state.results.values():
+                    if result["solution"] is not None:
+                        solution = result["solution"]
+                        break
                 
                 if solution is not None:
-                    st.markdown("**Solução encontrada:**")
+                    st.markdown("### Verificação Detalhada")
                     
-                    # Criar dataframe da solução
-                    solution_df = pd.DataFrame({
-                        "Variável": var_names[:len(solution)],
-                        "Valor": [float(val) for val in solution]
-                    })
-                    st.dataframe(solution_df)
-                    
-                    # Mostrar precisão da solução
-                    residual = np.linalg.norm(np.dot(A, solution) - b)
-                    st.markdown(f"**Resíduo:** {residual:.2e}")
-                    
-                    # Verificação rápida da solução
-                    st.markdown("**Verificação rápida:**")
                     for i in range(len(b)):
-                        calculated = np.dot(A[i], solution)
-                        is_correct = abs(calculated - b[i]) < 1e-10
-                        st.markdown(f"Equação {i+1}: {calculated:.4f} ≈ {b[i]:.4f} {'✓' if is_correct else '✗'}")
-                    
-                else:
-                    st.write("Não foi possível encontrar uma solução única por este método.")
-                
-                if st.session_state.show_steps:
-                    st.markdown("**Passos detalhados:**")
-                    for step in steps:
-                        st.write(step)
-        
-        # Adicionar interpretação da solução
-        st.markdown("### Interpretação da Solução")
-        
-        if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
-            st.success("O sistema possui uma única solução, que satisfaz todas as equações simultaneamente.")
-            
-            # Obter uma solução válida (qualquer uma)
-            solution = None
-            for result in st.session_state.results.values():
-                if result["solution"] is not None:
-                    solution = result["solution"]
-                    break
-            
-            if solution is not None:
-                st.markdown("### Verificação Detalhada")
-                
-                for i in range(len(b)):
-                    eq_result = np.dot(A[i], solution)
-                    is_correct = abs(eq_result - b[i]) < 1e-10
-                    
-                    eq_str = format_equation(A[i], var_names, b[i])
-                    
-                    substitution = " + ".join([f"{A[i][j]:.2f} × {solution[j]:.4f}" for j in range(len(solution)) if abs(A[i][j]) > 1e-10])
-                    if not substitution:
-                        substitution = "0"
-                    
-                    result_str = f"{eq_result:.4f} ≈ {b[i]:.4f}" if is_correct else f"{eq_result:.4f} ≠ {b[i]:.4f}"
-                    
-                    if is_correct:
-                        st.success(f"Equação {i+1}: {eq_str}\n{substitution} = {result_str} ✓")
-                    else:
-                        st.error(f"Equação {i+1}: {eq_str}\n{substitution} = {result_str} ✗")
+                        eq_result = np.dot(A[i], solution)
+                        is_correct = abs(eq_result - b[i]) < 1e-10
                         
-        elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
-            st.info("""
-            O sistema possui infinitas soluções. Isso ocorre porque há menos equações linearmente independentes
-            do que variáveis, criando um espaço de soluções possíveis.
-            
-            A solução pode ser expressa de forma paramétrica, onde uma ou mais variáveis são expressas em termos
-            de parâmetros livres.
-            """)
-            
-            # Tentar obter solução simbólica
-            try:
-                A = st.session_state.A
-                b = st.session_state.b
-                symbolic_solution, var_symbols = sympy_solve_system(A, b)
+                        eq_str = format_equation(A[i], var_names, b[i])
+                        
+                        substitution = " + ".join([f"{A[i][j]:.2f} × {solution[j]:.4f}" for j in range(len(solution)) if abs(A[i][j]) > 1e-10])
+                        if not substitution:
+                            substitution = "0"
+                        
+                        result_str = f"{eq_result:.4f} ≈ {b[i]:.4f}" if is_correct else f"{eq_result:.4f} ≠ {b[i]:.4f}"
+                        
+                        if is_correct:
+                            st.success(f"Equação {i+1}: {eq_str}\n{substitution} = {result_str} ✓")
+                        else:
+                            st.error(f"Equação {i+1}: {eq_str}\n{substitution} = {result_str} ✗")
+                            
+            elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
+                st.info("""
+                O sistema possui infinitas soluções. Isso ocorre porque há menos equações linearmente independentes
+                do que variáveis, criando um espaço de soluções possíveis.
                 
-                if symbolic_solution:
-                    st.markdown("### Solução Paramétrica")
+                A solução pode ser expressa de forma paramétrica, onde uma ou mais variáveis são expressas em termos
+                de parâmetros livres.
+                """)
+                
+                # Tentar obter solução simbólica
+                try:
+                    A = st.session_state.A
+                    b = st.session_state.b
+                    symbolic_solution, var_symbols = sympy_solve_system(A, b)
                     
-                    if isinstance(symbolic_solution, dict):
-                        for var, expr in symbolic_solution.items():
-                            st.latex(f"{sp.latex(var)} = {sp.latex(expr)}")
-                    else:
-                        st.latex(sp.latex(symbolic_solution))
-            except:
-                st.warning("Não foi possível obter uma representação paramétrica da solução.")
+                    if symbolic_solution:
+                        st.markdown("### Solução Paramétrica")
+                        
+                        if isinstance(symbolic_solution, dict):
+                            for var, expr in symbolic_solution.items():
+                                st.latex(f"{sp.latex(var)} = {sp.latex(expr)}")
+                        else:
+                            st.latex(sp.latex(symbolic_solution))
+                except:
+                    st.warning("Não foi possível obter uma representação paramétrica da solução.")
+                    
+            else:  # Sistema Impossível
+                st.error("""
+                O sistema não possui solução. Isso ocorre porque as equações são inconsistentes entre si,
+                ou seja, não existe um conjunto de valores para as variáveis que satisfaça todas as equações
+                simultaneamente.
                 
-        else:  # Sistema Impossível
-            st.error("""
-            O sistema não possui solução. Isso ocorre porque as equações são inconsistentes entre si,
-            ou seja, não existe um conjunto de valores para as variáveis que satisfaça todas as equações
-            simultaneamente.
+                Geometricamente, isso pode ser interpretado como:
+                - Em 2D: retas paralelas que nunca se intersectam
+                - Em 3D: planos sem ponto comum de interseção
+                """)
+                
+            # Adicionar botões de ação para a solução
+            col1, col2, col3 = st.columns(3)
             
-            Geometricamente, isso pode ser interpretado como:
-            - Em 2D: retas paralelas que nunca se intersectam
-            - Em 3D: planos sem ponto comum de interseção
-            """)
-            
-        # Adicionar botões de ação para a solução
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("📊 Ver Visualização", key="view_viz_btn"):
-                # Em vez de tab3.switch()
-                st.session_state.active_tab = "Visualização"
-                st.rerun()
+            with col1:
+                if st.button("📊 Ver Visualização", key="view_viz_btn"):
+                    st.session_state.solver_current_tab = "Visualização"
+                    st.rerun()
 
-        with col2:
-            if st.button("📋 Salvar nos Exemplos", key="save_example_btn"):
-                if "favorites" not in st.session_state:
-                    st.session_state.favorites = {"examples": []}
-                
-                # Criar um exemplo para salvar
-                example = {
-                    "title": f"Sistema {A.shape[0]}×{A.shape[1]} ({st.session_state.system_classification.split(' ')[2]})",
-                    "A": A.tolist(),
-                    "b": b.tolist(),
-                    "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-                }
-                
-                st.session_state.favorites["examples"].append(example)
-                st.success("Sistema salvo nos exemplos favoritos!")
-        
-        with col3:
-            if st.button("📥 Exportar Solução", key="export_solution_btn"):
-                st.success("Solução exportada! (Simulação)")
+            with col2:
+                if st.button("📋 Salvar nos Exemplos", key="save_example_btn"):
+                    if "favorites" not in st.session_state:
+                        st.session_state.favorites = {"examples": []}
+                    
+                    # Criar um exemplo para salvar
+                    example = {
+                        "title": f"Sistema {A.shape[0]}×{A.shape[1]} ({st.session_state.system_classification.split(' ')[2]})",
+                        "A": A.tolist(),
+                        "b": b.tolist(),
+                        "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+                    }
+                    
+                    st.session_state.favorites["examples"].append(example)
+                    st.success("Sistema salvo nos exemplos favoritos!")
+            
+            with col3:
+                if st.button("📥 Exportar Solução", key="export_solution_btn"):
+                    st.success("Solução exportada! (Simulação)")
     
-    with tab3:
+    elif st.session_state.solver_current_tab == "Visualização":
+        # Verificar se um sistema foi resolvido
         if not hasattr(st.session_state, 'system_solved') or not st.session_state.system_solved:
             st.info("Insira e resolva um sistema na aba 'Inserir Sistema'")
-            st.stop()
-        
-        st.markdown('<h2 class="sub-header">Visualização Gráfica</h2>', unsafe_allow_html=True)
-        
-        if st.session_state.vars_count == 2:
-            try:
-                fig = plot_2d_system(st.session_state.A, st.session_state.b)
-                if fig:
+            st.session_state.solver_current_tab = "Inserir Sistema"
+            st.rerun()
+        else:
+            # Código da aba "Visualização"
+            st.markdown('<h2 class="sub-header">Visualização Gráfica</h2>', unsafe_allow_html=True)
+            
+            if st.session_state.vars_count == 2:
+                try:
+                    fig = plot_2d_system(st.session_state.A, st.session_state.b)
+                    if fig:
+                        st.pyplot(fig)
+                        
+                        # Adicionar interpretação geométrica
+                        st.markdown("### Interpretação Geométrica")
+                        
+                        if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
+                            st.markdown("""
+                            Cada equação do sistema representa uma reta no plano cartesiano.
+                            A solução do sistema é o ponto de interseção entre estas retas.
+                            
+                            As coordenadas deste ponto satisfazem simultaneamente todas as equações do sistema.
+                            """)
+                        elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
+                            st.markdown("""
+                            As retas são coincidentes (sobrepostas), o que significa que qualquer
+                            ponto em uma das retas é uma solução válida para o sistema.
+                            
+                            Geometricamente, isso ocorre quando as equações representam a mesma reta
+                            ou quando algumas das equações são redundantes (combinações lineares de outras).
+                            """)
+                        else:  # SI
+                            st.markdown("""
+                            As retas são paralelas, o que indica que não há ponto de interseção
+                            e, portanto, o sistema não possui solução.
+                            
+                            Este é um caso onde as equações são inconsistentes: não existe um par de valores
+                            (x, y) que satisfaça todas as equações simultaneamente.
+                            """)
+                    else:
+                        st.warning("Não foi possível gerar a visualização do sistema.")
+                except Exception as e:
+                    st.error(f"Erro ao gerar o gráfico: {str(e)}")
+                    
+            elif st.session_state.vars_count == 3:
+                try:
+                    fig = plot_3d_system(st.session_state.A, st.session_state.b)
+                    if fig:
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Adicionar interpretação geométrica
+                        st.markdown("### Interpretação Geométrica")
+                        
+                        if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
+                            st.markdown("""
+                            Cada equação do sistema representa um plano no espaço tridimensional.
+                            A solução do sistema é o ponto único de interseção entre estes planos.
+                            
+                            As coordenadas deste ponto satisfazem simultaneamente todas as equações do sistema.
+                            """)
+                        elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
+                            st.markdown("""
+                            Os planos se intersectam em uma reta ou em um plano comum,
+                            resultando em infinitas soluções possíveis.
+                            
+                            Isso ocorre quando temos menos equações linearmente independentes
+                            do que variáveis. As soluções formam um espaço geométrico (reta ou plano).
+                            """)
+                        else:  # SI
+                            st.markdown("""
+                            Os planos não possuem um ponto comum de interseção,
+                            o que indica que o sistema não tem solução.
+                            
+                            Geometricamente, isso pode ocorrer quando temos três planos paralelos
+                            ou quando a interseção de dois planos é uma reta paralela ao terceiro plano.
+                            """)
+                    else:
+                        st.warning("Não foi possível gerar a visualização 3D do sistema.")
+                except Exception as e:
+                    st.error(f"Erro ao gerar o gráfico 3D: {str(e)}")
+                    
+            else:
+                st.info("""
+                A visualização gráfica está disponível apenas para sistemas com 2 ou 3 variáveis.
+                
+                Para sistemas com mais variáveis, você pode usar outras técnicas de análise,
+                como a redução do sistema ou a projeção em subespaços.
+                """)
+                
+                # Oferecer alternativas para visualização
+                st.markdown("### Alternativas para Análise Visual")
+                
+                viz_options = st.radio(
+                    "Escolha uma alternativa:",
+                    ["Matriz Ampliada", "Gráfico de Sparsidade", "Nenhuma"],
+                    horizontal=True
+                )
+                
+                if viz_options == "Matriz Ampliada":
+                    A = st.session_state.A
+                    b = st.session_state.b
+                    augmented = np.column_stack((A, b))
+                    
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    cax = ax.matshow(augmented, cmap='coolwarm')
+                    
+                    # Adicionar colorbar
+                    fig.colorbar(cax)
+                    
+                    # Adicionar rótulos
+                    var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]] + ["b"]
+                    ax.set_xticks(np.arange(A.shape[1] + 1))
+                    ax.set_xticklabels(var_names)
+                    ax.set_yticks(np.arange(A.shape[0]))
+                    ax.set_yticklabels([f"Eq {i+1}" for i in range(A.shape[0])])
+                    
+                    plt.title("Visualização da Matriz Ampliada")
                     st.pyplot(fig)
                     
-                    # Adicionar interpretação geométrica
-                    st.markdown("### Interpretação Geométrica")
+                elif viz_options == "Gráfico de Sparsidade":
+                    A = st.session_state.A
                     
-                    if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
-                        st.markdown("""
-                        Cada equação do sistema representa uma reta no plano cartesiano.
-                        A solução do sistema é o ponto de interseção entre estas retas.
-                        
-                        As coordenadas deste ponto satisfazem simultaneamente todas as equações do sistema.
-                        """)
-                    elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
-                        st.markdown("""
-                        As retas são coincidentes (sobrepostas), o que significa que qualquer
-                        ponto em uma das retas é uma solução válida para o sistema.
-                        
-                        Geometricamente, isso ocorre quando as equações representam a mesma reta
-                        ou quando algumas das equações são redundantes (combinações lineares de outras).
-                        """)
-                    else:  # SI
-                        st.markdown("""
-                        As retas são paralelas, o que indica que não há ponto de interseção
-                        e, portanto, o sistema não possui solução.
-                        
-                        Este é um caso onde as equações são inconsistentes: não existe um par de valores
-                        (x, y) que satisfaça todas as equações simultaneamente.
-                        """)
-                else:
-                    st.warning("Não foi possível gerar a visualização do sistema.")
-            except Exception as e:
-                st.error(f"Erro ao gerar o gráfico: {str(e)}")
-                
-        elif st.session_state.vars_count == 3:
-            try:
-                fig = plot_3d_system(st.session_state.A, st.session_state.b)
-                if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    ax.spy(A, markersize=15, color='#1E88E5')
                     
-                    # Adicionar interpretação geométrica
-                    st.markdown("### Interpretação Geométrica")
+                    # Adicionar rótulos
+                    var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]]
+                    ax.set_xticks(np.arange(A.shape[1]))
+                    ax.set_xticklabels(var_names)
+                    ax.set_yticks(np.arange(A.shape[0]))
+                    ax.set_yticklabels([f"Eq {i+1}" for i in range(A.shape[0])])
                     
-                    if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
-                        st.markdown("""
-                        Cada equação do sistema representa um plano no espaço tridimensional.
-                        A solução do sistema é o ponto único de interseção entre estes planos.
-                        
-                        As coordenadas deste ponto satisfazem simultaneamente todas as equações do sistema.
-                        """)
-                    elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
-                        st.markdown("""
-                        Os planos se intersectam em uma reta ou em um plano comum,
-                        resultando em infinitas soluções possíveis.
-                        
-                        Isso ocorre quando temos menos equações linearmente independentes
-                        do que variáveis. As soluções formam um espaço geométrico (reta ou plano).
-                        """)
-                    else:  # SI
-                        st.markdown("""
-                        Os planos não possuem um ponto comum de interseção,
-                        o que indica que o sistema não tem solução.
-                        
-                        Geometricamente, isso pode ocorrer quando temos três planos paralelos
-                        ou quando a interseção de dois planos é uma reta paralela ao terceiro plano.
-                        """)
-                else:
-                    st.warning("Não foi possível gerar a visualização 3D do sistema.")
-            except Exception as e:
-                st.error(f"Erro ao gerar o gráfico 3D: {str(e)}")
-                
-        else:
-            st.info("""
-            A visualização gráfica está disponível apenas para sistemas com 2 ou 3 variáveis.
-            
-            Para sistemas com mais variáveis, você pode usar outras técnicas de análise,
-            como a redução do sistema ou a projeção em subespaços.
-            """)
-            
-            # Oferecer alternativas para visualização
-            st.markdown("### Alternativas para Análise Visual")
-            
-            viz_options = st.radio(
-                "Escolha uma alternativa:",
-                ["Matriz Ampliada", "Gráfico de Sparsidade", "Nenhuma"],
-                horizontal=True
-            )
-            
-            if viz_options == "Matriz Ampliada":
-                A = st.session_state.A
-                b = st.session_state.b
-                augmented = np.column_stack((A, b))
-                
-                fig, ax = plt.subplots(figsize=(10, 6))
-                cax = ax.matshow(augmented, cmap='coolwarm')
-                
-                # Adicionar colorbar
-                fig.colorbar(cax)
-                
-                # Adicionar rótulos
-                var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]] + ["b"]
-                ax.set_xticks(np.arange(A.shape[1] + 1))
-                ax.set_xticklabels(var_names)
-                ax.set_yticks(np.arange(A.shape[0]))
-                ax.set_yticklabels([f"Eq {i+1}" for i in range(A.shape[0])])
-                
-                plt.title("Visualização da Matriz Ampliada")
-                st.pyplot(fig)
-                
-            elif viz_options == "Gráfico de Sparsidade":
-                A = st.session_state.A
-                
-                fig, ax = plt.subplots(figsize=(10, 6))
-                ax.spy(A, markersize=15, color='#1E88E5')
-                
-                # Adicionar rótulos
-                var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]]
-                ax.set_xticks(np.arange(A.shape[1]))
-                ax.set_xticklabels(var_names)
-                ax.set_yticks(np.arange(A.shape[0]))
-                ax.set_yticklabels([f"Eq {i+1}" for i in range(A.shape[0])])
-                
-                plt.title("Gráfico de Sparsidade dos Coeficientes")
-                st.pyplot(fig)
+                    plt.title("Gráfico de Sparsidade dos Coeficientes")
+                    st.pyplot(fig)
 
 def show_theory_page():
     st.markdown('<h1 class="main-header">Teoria dos Sistemas Lineares</h1>', unsafe_allow_html=True)
@@ -6961,11 +6980,32 @@ def main():
 
 # Função para a página de resolver sistema
 def show_solver_page():
+    # Inicializar variáveis de estado se não existirem
+    if "solver_show_steps" not in st.session_state:
+        st.session_state.solver_show_steps = True
+    
+    # Controle de abas
+    if "solver_current_tab" not in st.session_state:
+        st.session_state.solver_current_tab = "Inserir Sistema"
+        
     st.markdown('<h1 class="main-header">Resolver Sistema Linear</h1>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["📝 Inserir Sistema", "🔍 Resultados", "📊 Visualização"])
+    # Abas de navegação
+    tabs = ["📝 Inserir Sistema", "🔍 Resultados", "📊 Visualização"]
+    selected_tab = st.radio("", tabs, horizontal=True, 
+                            index=tabs.index(f"{'📝 Inserir Sistema' if st.session_state.solver_current_tab == 'Inserir Sistema' else '🔍 Resultados' if st.session_state.solver_current_tab == 'Resultados' else '📊 Visualização'}"),
+                            key="solver_tab_selector")
     
-    with tab1:
+    # Atualizar a aba atual
+    if "📝 Inserir Sistema" in selected_tab:
+        st.session_state.solver_current_tab = "Inserir Sistema"
+    elif "🔍 Resultados" in selected_tab:
+        st.session_state.solver_current_tab = "Resultados"
+    else:
+        st.session_state.solver_current_tab = "Visualização"
+    
+    # Conteúdo da aba atual
+    if st.session_state.solver_current_tab == "Inserir Sistema":
         st.markdown('<h2 class="sub-header">Insira seu sistema de equações lineares</h2>', unsafe_allow_html=True)
         
         col1, col2 = st.columns([3, 1])
@@ -7021,8 +7061,113 @@ def show_solver_page():
                 # Mostrar a equação formatada
                 eq_str = format_equation(eq_coeffs, var_names, const)
                 st.write(f"Equação {i+1}: {eq_str}")
-        
-        # Implementar outros métodos de entrada (Equações (Texto), Matriz Aumentada)
+                
+        elif system_input_method == "Equações (Texto)":
+            st.markdown("""
+            Insira cada equação em uma linha separada, usando a sintaxe:
+            ```
+            a*x + b*y + c*z = d
+            ```
+            Exemplo:
+            ```
+            2*x + 3*y = 5
+            x - y = 1
+            ```
+            """)
+            
+            equations_text = st.text_area(
+                "Equações (uma por linha):",
+                height=150,
+                help="Insira uma equação por linha. Use * para multiplicação.",
+                value="x + y = 10\n2*x - y = 5"
+            )
+            
+            try:
+                # Processar as equações de texto
+                equations = equations_text.strip().split('\n')
+                
+                var_symbols = []
+                for i in range(vars_count):
+                    if i < len(["x", "y", "z", "w", "v", "u"]):
+                        var_symbols.append(sp.symbols(["x", "y", "z", "w", "v", "u"][i]))
+                
+                for eq_text in equations:
+                    if not eq_text.strip():
+                        continue
+                        
+                    # Substituir = por - ( para padronizar
+                    eq_text = eq_text.replace("=", "-(") + ")"
+                    
+                    # Converter para expressão sympy
+                    expr = sp.sympify(eq_text)
+                    
+                    # Extrair coeficientes
+                    eq_coeffs = []
+                    for var in var_symbols:
+                        coef = expr.coeff(var)
+                        eq_coeffs.append(float(coef))
+                    
+                    # Extrair termo constante
+                    const = -float(expr.subs([(var, 0) for var in var_symbols]))
+                    
+                    coeffs.append(eq_coeffs)
+                    constants.append(const)
+                
+                # Mostrar as equações interpretadas
+                st.markdown("### Equações interpretadas:")
+                for i, (eq_coef, eq_const) in enumerate(zip(coeffs, constants)):
+                    var_names = ["x", "y", "z", "w", "v", "u"][:vars_count]
+                    eq_str = format_equation(eq_coef, var_names, eq_const)
+                    st.write(f"Equação {i+1}: {eq_str}")
+                    
+            except Exception as e:
+                st.error(f"Erro ao processar as equações: {str(e)}")
+                st.stop()
+                
+        else:  # Matriz Aumentada
+            st.markdown("""
+            Insira a matriz aumentada do sistema. Cada linha representa uma equação, e a última coluna contém os termos independentes.
+            """)
+            
+            matrix_text = st.text_area(
+                "Matriz aumentada (uma linha por equação):",
+                height=150,
+                help="Insira os elementos da matriz separados por espaços, com uma linha por equação.",
+                value="1 1 10\n2 -1 5"
+            )
+            
+            try:
+                # Processar a matriz aumentada
+                matrix_rows = matrix_text.strip().split('\n')
+                augmented_matrix = []
+                
+                for row_text in matrix_rows:
+                    if not row_text.strip():
+                        continue
+                    
+                    # Converter elementos para números
+                    elements = [float(e) for e in row_text.split()]
+                    augmented_matrix.append(elements)
+                
+                # Verificar dimensões
+                if any(len(row) != vars_count + 1 for row in augmented_matrix):
+                    st.error(f"Erro: cada linha deve ter {vars_count + 1} elementos (coeficientes + termo independente).")
+                    st.stop()
+                
+                # Extrair coeficientes e constantes
+                coeffs = [row[:-1] for row in augmented_matrix]
+                constants = [row[-1] for row in augmented_matrix]
+                
+                # Mostrar as equações interpretadas
+                st.markdown("### Equações interpretadas:")
+                for i, (eq_coef, eq_const) in enumerate(zip(coeffs, constants)):
+                    var_names = ["x", "y", "z", "w", "v", "u"][:vars_count]
+                    eq_str = format_equation(eq_coef, var_names, eq_const)
+                    st.write(f"Equação {i+1}: {eq_str}")
+                
+            except Exception as e:
+                st.error(f"Erro ao processar a matriz aumentada: {str(e)}")
+                st.stop()
         
         # Método de resolução
         st.markdown("### Método de Resolução")
@@ -7077,9 +7222,37 @@ def show_solver_page():
                 results = {}
                 
                 with st.spinner("Resolvendo o sistema..."):
-                    # Implementar chamadas para os diferentes métodos de resolução
-                    pass
-                    
+                    if solution_method in ["Eliminação de Gauss", "Todos os Métodos"]:
+                        steps, solution = gaussian_elimination_steps(A, b)
+                        results["Eliminação de Gauss"] = {"steps": steps, "solution": solution}
+                        
+                    if solution_method in ["Gauss-Jordan", "Todos os Métodos"]:
+                        steps, solution = gauss_jordan_steps(A, b)
+                        results["Gauss-Jordan"] = {"steps": steps, "solution": solution}
+                        
+                    if vars_count <= 4 and solution_method in ["Regra de Cramer", "Todos os Métodos"]:
+                        if A.shape[0] == A.shape[1]:  # Apenas para sistemas quadrados
+                            steps, solution = cramer_rule(A, b, detailed=show_steps)
+                            results["Regra de Cramer"] = {"steps": steps, "solution": solution}
+                        
+                    if solution_method in ["Matriz Inversa", "Todos os Métodos"]:
+                        if A.shape[0] == A.shape[1]:  # Apenas para sistemas quadrados
+                            steps, solution = matrix_inverse_method(A, b, detailed=show_steps)
+                            results["Matriz Inversa"] = {"steps": steps, "solution": solution}
+                            
+                    if solution_method in ["Decomposição LU", "Todos os Métodos"]:
+                        if A.shape[0] == A.shape[1]:  # Apenas para sistemas quadrados
+                            steps, solution = lu_decomposition_method(A, b, detailed=show_steps)
+                            results["Decomposição LU"] = {"steps": steps, "solution": solution}
+                            
+                    if solution_method in ["Jacobi", "Todos os Métodos"]:
+                        steps, solution = jacobi_iteration_method(A, b, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
+                        results["Jacobi"] = {"steps": steps, "solution": solution}
+                        
+                    if solution_method in ["Gauss-Seidel", "Todos os Métodos"]:
+                        steps, solution = gauss_seidel_method(A, b, max_iter=max_iter, tolerance=tolerance, detailed=show_steps)
+                        results["Gauss-Seidel"] = {"steps": steps, "solution": solution}
+                        
                 st.session_state.results = results
                 
                 # Atualizar progresso do usuário
@@ -7089,12 +7262,318 @@ def show_solver_page():
                 # Mostrar mensagem de sucesso e sugerir ir para a próxima aba
                 st.success("Sistema resolvido com sucesso! Veja os resultados na aba 'Resultados'.")
                 
-                # Usar session_state para indicar que queremos mostrar os resultados
-                st.session_state.show_results_tab = True
+                # Mudar para a aba de resultados automaticamente
+                st.session_state.solver_current_tab = "Resultados"
+                st.rerun()
                 
             except Exception as e:
                 st.error(f"Erro ao resolver o sistema: {str(e)}")
                 st.session_state.system_solved = False
+
+    elif st.session_state.solver_current_tab == "Resultados":
+        # Verificar se um sistema foi resolvido
+        if not hasattr(st.session_state, 'system_solved') or not st.session_state.system_solved:
+            st.info("Insira e resolva um sistema na aba 'Inserir Sistema'")
+            st.session_state.solver_current_tab = "Inserir Sistema"
+            st.rerun()
+        else:
+            # Código da aba "Resultados"
+            st.markdown('<h2 class="sub-header">Resultados da Resolução</h2>', unsafe_allow_html=True)
+            
+            # Exibir classificação do sistema
+            st.markdown(f"**Classificação do Sistema:** {st.session_state.system_classification}")
+            
+            # Mostrar as equações do sistema
+            st.markdown("### Sistema original:")
+            var_names = ["x", "y", "z", "w", "v", "u"][:st.session_state.vars_count]
+            A = st.session_state.A
+            b = st.session_state.b
+            
+            for i in range(len(b)):
+                eq_str = format_equation(A[i], var_names, b[i])
+                st.write(f"Equação {i+1}: {eq_str}")
+            
+            # Exibir matriz aumentada
+            with st.expander("Ver matriz aumentada", expanded=False):
+                augmented = np.column_stack((A, b))
+                st.markdown("**Matriz aumentada [A|b]:**")
+                st.dataframe(pd.DataFrame(augmented, 
+                                        columns=[f"{var}" for var in var_names] + ["b"],
+                                        index=[f"Eq {i+1}" for i in range(len(b))]))
+            
+            # Exibir solução para cada método
+            st.markdown("### Resultados por método:")
+            
+            for method, result in st.session_state.results.items():
+                with st.expander(f"📊 {method}", expanded=method == st.session_state.solution_method):
+                    steps = result["steps"]
+                    solution = result["solution"]
+                    
+                    if solution is not None:
+                        st.markdown("**Solução encontrada:**")
+                        
+                        # Criar dataframe da solução
+                        solution_df = pd.DataFrame({
+                            "Variável": var_names[:len(solution)],
+                            "Valor": [float(val) for val in solution]
+                        })
+                        st.dataframe(solution_df)
+                        
+                        # Mostrar precisão da solução
+                        residual = np.linalg.norm(np.dot(A, solution) - b)
+                        st.markdown(f"**Resíduo:** {residual:.2e}")
+                        
+                        # Verificação rápida da solução
+                        st.markdown("**Verificação rápida:**")
+                        for i in range(len(b)):
+                            calculated = np.dot(A[i], solution)
+                            is_correct = abs(calculated - b[i]) < 1e-10
+                            st.markdown(f"Equação {i+1}: {calculated:.4f} ≈ {b[i]:.4f} {'✓' if is_correct else '✗'}")
+                        
+                    else:
+                        st.write("Não foi possível encontrar uma solução única por este método.")
+                    
+                    if st.session_state.solver_show_steps:
+                        st.markdown("**Passos detalhados:**")
+                        for step in steps:
+                            st.write(step)
+            
+            # Adicionar interpretação da solução
+            st.markdown("### Interpretação da Solução")
+            
+            if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
+                st.success("O sistema possui uma única solução, que satisfaz todas as equações simultaneamente.")
+                
+                # Obter uma solução válida (qualquer uma)
+                solution = None
+                for result in st.session_state.results.values():
+                    if result["solution"] is not None:
+                        solution = result["solution"]
+                        break
+                
+                if solution is not None:
+                    st.markdown("### Verificação Detalhada")
+                    
+                    for i in range(len(b)):
+                        eq_result = np.dot(A[i], solution)
+                        is_correct = abs(eq_result - b[i]) < 1e-10
+                        
+                        eq_str = format_equation(A[i], var_names, b[i])
+                        
+                        substitution = " + ".join([f"{A[i][j]:.2f} × {solution[j]:.4f}" for j in range(len(solution)) if abs(A[i][j]) > 1e-10])
+                        if not substitution:
+                            substitution = "0"
+                        
+                        result_str = f"{eq_result:.4f} ≈ {b[i]:.4f}" if is_correct else f"{eq_result:.4f} ≠ {b[i]:.4f}"
+                        
+                        if is_correct:
+                            st.success(f"Equação {i+1}: {eq_str}\n{substitution} = {result_str} ✓")
+                        else:
+                            st.error(f"Equação {i+1}: {eq_str}\n{substitution} = {result_str} ✗")
+                            
+            elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
+                st.info("""
+                O sistema possui infinitas soluções. Isso ocorre porque há menos equações linearmente independentes
+                do que variáveis, criando um espaço de soluções possíveis.
+                
+                A solução pode ser expressa de forma paramétrica, onde uma ou mais variáveis são expressas em termos
+                de parâmetros livres.
+                """)
+                
+                # Tentar obter solução simbólica
+                try:
+                    A = st.session_state.A
+                    b = st.session_state.b
+                    symbolic_solution, var_symbols = sympy_solve_system(A, b)
+                    
+                    if symbolic_solution:
+                        st.markdown("### Solução Paramétrica")
+                        
+                        if isinstance(symbolic_solution, dict):
+                            for var, expr in symbolic_solution.items():
+                                st.latex(f"{sp.latex(var)} = {sp.latex(expr)}")
+                        else:
+                            st.latex(sp.latex(symbolic_solution))
+                except:
+                    st.warning("Não foi possível obter uma representação paramétrica da solução.")
+                    
+            else:  # Sistema Impossível
+                st.error("""
+                O sistema não possui solução. Isso ocorre porque as equações são inconsistentes entre si,
+                ou seja, não existe um conjunto de valores para as variáveis que satisfaça todas as equações
+                simultaneamente.
+                
+                Geometricamente, isso pode ser interpretado como:
+                - Em 2D: retas paralelas que nunca se intersectam
+                - Em 3D: planos sem ponto comum de interseção
+                """)
+                
+            # Adicionar botões de ação para a solução
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                if st.button("📊 Ver Visualização", key="view_viz_btn"):
+                    st.session_state.solver_current_tab = "Visualização"
+                    st.rerun()
+
+            with col2:
+                if st.button("📋 Salvar nos Exemplos", key="save_example_btn"):
+                    if "favorites" not in st.session_state:
+                        st.session_state.favorites = {"examples": []}
+                    
+                    # Criar um exemplo para salvar
+                    example = {
+                        "title": f"Sistema {A.shape[0]}×{A.shape[1]} ({st.session_state.system_classification.split(' ')[2]})",
+                        "A": A.tolist(),
+                        "b": b.tolist(),
+                        "date": datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+                    }
+                    
+                    st.session_state.favorites["examples"].append(example)
+                    st.success("Sistema salvo nos exemplos favoritos!")
+            
+            with col3:
+                if st.button("📥 Exportar Solução", key="export_solution_btn"):
+                    st.success("Solução exportada! (Simulação)")
+    
+    elif st.session_state.solver_current_tab == "Visualização":
+        # Verificar se um sistema foi resolvido
+        if not hasattr(st.session_state, 'system_solved') or not st.session_state.system_solved:
+            st.info("Insira e resolva um sistema na aba 'Inserir Sistema'")
+            st.session_state.solver_current_tab = "Inserir Sistema"
+            st.rerun()
+        else:
+            # Código da aba "Visualização"
+            st.markdown('<h2 class="sub-header">Visualização Gráfica</h2>', unsafe_allow_html=True)
+            
+            if st.session_state.vars_count == 2:
+                try:
+                    fig = plot_2d_system(st.session_state.A, st.session_state.b)
+                    if fig:
+                        st.pyplot(fig)
+                        
+                        # Adicionar interpretação geométrica
+                        st.markdown("### Interpretação Geométrica")
+                        
+                        if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
+                            st.markdown("""
+                            Cada equação do sistema representa uma reta no plano cartesiano.
+                            A solução do sistema é o ponto de interseção entre estas retas.
+                            
+                            As coordenadas deste ponto satisfazem simultaneamente todas as equações do sistema.
+                            """)
+                        elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
+                            st.markdown("""
+                            As retas são coincidentes (sobrepostas), o que significa que qualquer
+                            ponto em uma das retas é uma solução válida para o sistema.
+                            
+                            Geometricamente, isso ocorre quando as equações representam a mesma reta
+                            ou quando algumas das equações são redundantes (combinações lineares de outras).
+                            """)
+                        else:  # SI
+                            st.markdown("""
+                            As retas são paralelas, o que indica que não há ponto de interseção
+                            e, portanto, o sistema não possui solução.
+                            
+                            Este é um caso onde as equações são inconsistentes: não existe um par de valores
+                            (x, y) que satisfaça todas as equações simultaneamente.
+                            """)
+                    else:
+                        st.warning("Não foi possível gerar a visualização do sistema.")
+                except Exception as e:
+                    st.error(f"Erro ao gerar o gráfico: {str(e)}")
+                    
+            elif st.session_state.vars_count == 3:
+                try:
+                    fig = plot_3d_system(st.session_state.A, st.session_state.b)
+                    if fig:
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Adicionar interpretação geométrica
+                        st.markdown("### Interpretação Geométrica")
+                        
+                        if st.session_state.system_classification == "Sistema Possível e Determinado (SPD)":
+                            st.markdown("""
+                            Cada equação do sistema representa um plano no espaço tridimensional.
+                            A solução do sistema é o ponto único de interseção entre estes planos.
+                            
+                            As coordenadas deste ponto satisfazem simultaneamente todas as equações do sistema.
+                            """)
+                        elif st.session_state.system_classification == "Sistema Possível e Indeterminado (SPI)":
+                            st.markdown("""
+                            Os planos se intersectam em uma reta ou em um plano comum,
+                            resultando em infinitas soluções possíveis.
+                            
+                            Isso ocorre quando temos menos equações linearmente independentes
+                            do que variáveis. As soluções formam um espaço geométrico (reta ou plano).
+                            """)
+                        else:  # SI
+                            st.markdown("""
+                            Os planos não possuem um ponto comum de interseção,
+                            o que indica que o sistema não tem solução.
+                            
+                            Geometricamente, isso pode ocorrer quando temos três planos paralelos
+                            ou quando a interseção de dois planos é uma reta paralela ao terceiro plano.
+                            """)
+                    else:
+                        st.warning("Não foi possível gerar a visualização 3D do sistema.")
+                except Exception as e:
+                    st.error(f"Erro ao gerar o gráfico 3D: {str(e)}")
+                    
+            else:
+                st.info("""
+                A visualização gráfica está disponível apenas para sistemas com 2 ou 3 variáveis.
+                
+                Para sistemas com mais variáveis, você pode usar outras técnicas de análise,
+                como a redução do sistema ou a projeção em subespaços.
+                """)
+                
+                # Oferecer alternativas para visualização
+                st.markdown("### Alternativas para Análise Visual")
+                
+                viz_options = st.radio(
+                    "Escolha uma alternativa:",
+                    ["Matriz Ampliada", "Gráfico de Sparsidade", "Nenhuma"],
+                    horizontal=True
+                )
+                
+                if viz_options == "Matriz Ampliada":
+                    A = st.session_state.A
+                    b = st.session_state.b
+                    augmented = np.column_stack((A, b))
+                    
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    cax = ax.matshow(augmented, cmap='coolwarm')
+                    
+                    # Adicionar colorbar
+                    fig.colorbar(cax)
+                    
+                    # Adicionar rótulos
+                    var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]] + ["b"]
+                    ax.set_xticks(np.arange(A.shape[1] + 1))
+                    ax.set_xticklabels(var_names)
+                    ax.set_yticks(np.arange(A.shape[0]))
+                    ax.set_yticklabels([f"Eq {i+1}" for i in range(A.shape[0])])
+                    
+                    plt.title("Visualização da Matriz Ampliada")
+                    st.pyplot(fig)
+                    
+                elif viz_options == "Gráfico de Sparsidade":
+                    A = st.session_state.A
+                    
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    ax.spy(A, markersize=15, color='#1E88E5')
+                    
+                    # Adicionar rótulos
+                    var_names = ["x", "y", "z", "w", "v", "u"][:A.shape[1]]
+                    ax.set_xticks(np.arange(A.shape[1]))
+                    ax.set_xticklabels(var_names)
+                    ax.set_yticks(np.arange(A.shape[0]))
+                    ax.set_yticklabels([f"Eq {i+1}" for i in range(A.shape[0])])
+                    
+                    plt.title("Gráfico de Sparsidade dos Coeficientes")
+                    st.pyplot(fig)
+                    
 def show_exercises_page():
     st.markdown('<h1 class="main-header">Exercícios de Sistemas Lineares</h1>', unsafe_allow_html=True)
     
