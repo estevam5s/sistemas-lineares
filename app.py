@@ -1570,44 +1570,60 @@ def get_youtube_videos():
     """Retorna uma lista de vídeos do YouTube sobre sistemas lineares"""
     videos = [
         {
-            "title": "Sistemas Lineares - Introdução",
+            "title": "SISTEMAS - CONCEITOS BÁSICOS (EQUAÇÃO LINEAR)",
             "description": "Uma introdução aos sistemas de equações lineares e suas aplicações.",
-            "url": "https://www.youtube.com/embed/LhOHnLXolJc",
-            "duration": "12:45",
-            "author": "Matemática Rio",
+            "url": "https://www.youtube.com/watch?v=mw0mEZ4DBsk&list=PLEfwqyY2ox868TPa8vjL-QPfQlmtqRGa5&index=13",
+            "duration": "7:42",
+            "author": "Paulo Pereira",
             "level": "Básico"
         },
         {
-            "title": "Método da Eliminação de Gauss",
+            "title": "Escalonamento de Sistema Lineares 3x3",
             "description": "Resolução passo a passo do método de eliminação de Gauss.",
-            "url": "https://www.youtube.com/embed/kaRWnHWL7nE",
-            "duration": "18:22",
-            "author": "Prof. Ferretto",
+            "url": "https://www.youtube.com/watch?v=q06R8Y5zfy4",
+            "duration": "14:23",
+            "author": "Matemática no Papel",
             "level": "Intermediário"
         },
         {
             "title": "Regra de Cramer Explicada",
             "description": "Tutorial detalhado sobre a aplicação da regra de Cramer com exemplos.",
-            "url": "https://www.youtube.com/embed/MQPx2c-NQYI",
-            "duration": "15:10",
-            "author": "Equaciona Matemática",
+            "url": "https://www.youtube.com/watch?v=-tdj_vMekdg",
+            "duration": "11:37",
+            "author": "Paulo Pereira",
             "level": "Intermediário"
         },
         {
-            "title": "Aplicações de Sistemas Lineares",
-            "description": "Exemplos práticos de aplicações de sistemas lineares em diversos campos.",
-            "url": "https://www.youtube.com/embed/j2RbZzKMDnM",
-            "duration": "20:35",
-            "author": "Me Salva! ENEM",
+            "title": "DISCUSSÃO E CLASSIFICAÇÃO DE UM SISTEMA",
+            "description": "Discutir um sistema em relação a um parâmetro dado, é determinar a classificação do sistema - Possível e Determinado, Possível e Indeterminado e Impossível - dados diferentes valores deste parâmetro.",
+            "url": "https://www.youtube.com/watch?v=s958ELGm2ps",
+            "duration": "09:10",
+            "author": "Paulo Pereira",
             "level": "Básico"
         },
         {
-            "title": "Matriz Inversa e Solução de Sistemas",
+            "title": "DISCUSSÃO DE UM SISTEMA (3X3)",
+            "description": "Discutir um sistema em relação a um parâmetro dado, é determinar a classificação do sistema - Possível e Determinado, Possível e Indeterminado e Impossível - dados diferentes valores deste parâmetro.",
+            "url": "https://www.youtube.com/watch?v=szDVO_TzWLM",
+            "duration": "11:03",
+            "author": "Paulo Pereira",
+            "level": "Intermediário"
+        },
+        {
+            "title": "MATRIZ INVERSA (FÁCIL)",
             "description": "Como encontrar a matriz inversa e usá-la para resolver sistemas lineares.",
             "url": "https://www.youtube.com/embed/kuixJnmwJxo",
-            "duration": "22:18",
-            "author": "Prof. Marcos Aba",
+            "duration": "04:48",
+            "author": "Paulo Pereira",
             "level": "Avançado"
+        },
+        {
+            "title": "MATRIZES: Conceitos Iniciais.",
+            "description": "Como encontrar a matriz inversa e usá-la para resolver sistemas lineares.",
+            "url": "https://www.youtube.com/watch?v=lZ9onrdpusA&list=PLEfwqyY2ox868TPa8vjL-QPfQlmtqRGa5",
+            "duration": "12:49",
+            "author": "Paulo Pereira",
+            "level": "Básico"
         },
         {
             "title": "Sistemas Lineares 3x3 - Passo a Passo",
