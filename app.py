@@ -1923,7 +1923,7 @@ def show_home_page():
             <p style="font-size: 0.8rem; color: #666;">Desenvolvido para auxiliar no estudo de Álgebra Linear com foco em sistemas de equações.</p>
         </div>
         <div>
-            <p>📧 Contato: <a href="mailto:contato@estevam.com.br">contato@estevam.com.br</a></p>
+            <p>📧 Contato: <a href="mailto:contato@estevamsouza.com.br">contato@estevamsouza.com.br</a></p>
         </div>
     </div>
     """, unsafe_allow_html=True)
