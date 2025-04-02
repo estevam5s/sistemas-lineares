@@ -9222,11 +9222,11 @@ def show_videos_page():
         
         playlists = [
             {
-                "title": "Curso Completo de Sistemas Lineares",
-                "author": "Matemática Rio",
-                "videos": 15,
+                "title": "Curso Completo de Calculo",
+                "author": "Equaciona Com Paulo Pereira",
+                "videos": 22,
                 "level": "Básico ao Avançado",
-                "url": "https://www.youtube.com/playlist?list=example1"
+                "url": "https://www.youtube.com/watch?v=lZ9onrdpusA&list=PLEfwqyY2ox868TPa8vjL-QPfQlmtqRGa5"
             },
             {
                 "title": "Álgebra Linear: Sistemas e Aplicações",
